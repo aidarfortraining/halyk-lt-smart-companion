@@ -2,6 +2,7 @@
 render snapshot for the frontend, which replaces its state wholesale."""
 from rest_framework import serializers
 
+from .graph.context import budget_now
 from .graph.steps import active_chips_and_await
 from .models import BudgetLine, Message, PlanItem, Trip
 
@@ -34,14 +35,12 @@ class BudgetLineSerializer(serializers.ModelSerializer):
 
 def build_budget(trip):
     """Live budget derived from BudgetLine: fact = Σ paid, estimate = Σ unpaid plan."""
-    lines = list(trip.budget_lines.all())
-    fact = sum(l.fact_amount for l in lines if l.fact_amount is not None)
-    estimate = sum(l.plan_amount for l in lines if l.fact_amount is None)
+    fact, estimate, total = budget_now(trip)
     return {
         "fact": fact,
         "estimate": estimate,
-        "total": fact + estimate,
-        "lines": BudgetLineSerializer(lines, many=True).data,
+        "total": total,
+        "lines": BudgetLineSerializer(trip.budget_lines.all(), many=True).data,
     }
 
 

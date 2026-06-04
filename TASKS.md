@@ -87,12 +87,19 @@
 
 ---
 
-## Веха 4 — Фаза 2: в поезде (ARCHITECTURE §2, §5.3)
+## Веха 4 — Фаза 2: в поезде (ARCHITECTURE §2, §5.3) ✅
 
-- [ ] Шаги фазы 2: вход (silent, time-divider + concern «через 10 мин Астана»),
-      `airba`(только апарты — в hotel-path skip), `taxi_arrival`.
-- [ ] `branch_housing` (conditional) — hotel → `airba` остаётся locked, идём к такси.
-- **Проверка:** в hotel-path шаг `airba` пропускается; «Такси с вокзала» → `done`.
+- [x] Шаги фазы 2: `train_entry`(silent: time-divider + concern «через 10 мин Астана»),
+      `airba`(`requires_apartments` — в hotel-path skip), `taxi_arrival`.
+- [x] `branch_housing` свёрнут в `advance`: неактивные (apartments-only) шаги пропускаются без эмита;
+      `/advance` не разблокирует `airba` в hotel-path. `_step_active` учитывается и в выводе chips.
+- [x] **Фикс из Вехи 3:** fallback-тексты и подписи чипов теперь форматируются контекстом
+      (`graph/context.py`: `text_ctx`/`full_ctx`/`budget_now`) — плейсхолдеры `{hotel}`/`{sat}` больше
+      не утекают буквально. DRY бюджета (serializers ← `budget_now`).
+- [x] Smoke-тест `test_phase2_hotel_path_skips_airba` (вкл. проверку рендера плейсхолдеров).
+- **Проверка:** ✅ в hotel-path `airba` пропущен (chips `taxi/skip`), остаётся `locked`; concern-карточка
+      эмитится; «Такси с вокзала» → `done`; бюджет 105 000/175 000 без изменений (трансфер реализуется
+      трекером в фазе 3).
 
 ---
 

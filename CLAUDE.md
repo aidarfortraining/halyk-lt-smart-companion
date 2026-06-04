@@ -8,14 +8,36 @@ A **demo-day prototype** for Halyk Bank: an AI travel companion that turns a one
 
 ### Current state
 
-The repo currently contains **only specs and a UI prototype — no application code yet.**
+**Build in progress** (backend-first, per `ARCHITECTURE.md §13`). Done: vehи 0–3 — Django/DRF
+backend with the LangGraph core running **phases 0–1** end-to-end on fallback texts. Not yet built:
+phases 2–4, real LLM, the React frontend, Docker. **`TASKS.md` is the live execution tracker**
+(per-veha checklist with verification + as-built notes) — read it to see exactly what's done.
+
+Built so far: `backend/` (Django project `config/`, app `trips/` with `models.py`, `seed.py`,
+`serializers.py`, `views.py`, `graph/` = the LangGraph core, `tests.py` smoke tests),
+`frontend/` (Vite + React 18 + TS scaffold, not yet wired). Dev DB `backend/db.sqlite3` (gitignored).
+
+Source-of-truth docs:
 
 - `halyk_smart_travel_spec.md` — **source of truth for product logic & content** (the anxiety map, 10-stage journey, ~18 notifications, budget mechanics, weather adaptation). Russian.
-- `ARCHITECTURE.md` — **source of truth for the implementation** (finalized: tech stack, Django data model, LangGraph nodes, API contract, full 5-phase scope, build milestones, prototype-vs-spec content corrections). Russian. **Read this first before coding.**
+- `ARCHITECTURE.md` — **source of truth for the implementation** (tech stack, Django data model, LangGraph nodes, API contract, full 5-phase scope, build milestones, prototype-vs-spec content corrections; see §16 for as-built deltas). Russian. **Read this first before coding.**
+- `TASKS.md` — **live build tracker**: the 9 milestones expanded into tasks with verification + decisions taken. Russian.
 - `PLAN.md` — original build-architecture sketch & explicit non-goals (skeleton; superseded in detail by `ARCHITECTURE.md`). Russian.
 - `prototype.html` — **source of truth for visual look only** (single-file vanilla HTML/CSS/JS, ~1500 lines, Halyk brand, chat + Travel Plan). No framework, no build step — open directly in a browser. Will be rebuilt; its *content* (dates, texts, budget, train duration, document trigger) is **superseded** — see `ARCHITECTURE.md` §14.
 
 When these sources conflict: **how to build → `ARCHITECTURE.md`, content/dates/text → `halyk_smart_travel_spec.md`, visual look → `prototype.html`.**
+
+### Commands (local dev)
+
+The venv is `.venv` (Python 3.11) at the repo root; backend lives in `backend/` (run `manage.py` from there or as `backend\manage.py`).
+
+- **Backend deps:** `.venv\Scripts\python.exe -m pip install -r backend\requirements.txt`
+- **Migrate + seed:** `.venv\Scripts\python.exe backend\manage.py migrate` then `... seed_demo` (idempotent reference Trip)
+- **Run backend:** `.venv\Scripts\python.exe backend\manage.py runserver` → `localhost:8000` (API under `/api/`)
+- **Smoke tests:** `.venv\Scripts\python.exe -m pytest backend -q` (the only tests, per non-goals)
+- **Frontend:** `npm install --prefix frontend`, `npm run dev --prefix frontend` (Vite, proxies `/api` → `:8000`), `npm run build --prefix frontend` (emits to `backend/frontend_dist`)
+- **Final target (veha 9):** `docker compose up` → `localhost:8000` end-to-end.
+- **Windows note:** console is cp1252 — keep management-command/script `print` output ASCII (Cyrillic crashes the console; HTTP/JSON is UTF-8 and unaffected).
 
 ### Planned stack (see ARCHITECTURE.md)
 

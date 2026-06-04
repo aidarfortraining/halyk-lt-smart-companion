@@ -59,8 +59,10 @@ def trip_advance(request, pk):
     _, awaiting = active_chips_and_await(trip)
     if not awaiting and to_phase == trip.phase + 1 and 1 <= to_phase <= 4:
         with transaction.atomic():
-            PlanItem.objects.filter(trip=trip, phase=to_phase, state=PlanItem.LOCKED).update(
-                state=PlanItem.WAIT)
+            items = PlanItem.objects.filter(trip=trip, phase=to_phase, state=PlanItem.LOCKED)
+            if not trip.is_apartments:
+                items = items.exclude(key="airba")   # apartments-only — stays locked in hotel-path
+            items.update(state=PlanItem.WAIT)
             trip.phase = to_phase
             trip.step_index = 0
             trip.save(update_fields=["phase", "step_index"])

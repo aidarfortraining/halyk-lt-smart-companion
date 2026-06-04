@@ -5,14 +5,11 @@ The view wraps the whole run in one transaction (atomicity without a persist acc
 """
 from ..models import BudgetLine, Message, PlanItem, Trip
 from . import llm
-from .steps import PHASE_END, PHASES
+from .context import full_ctx
+from .steps import PHASE_END, PHASES, _step_active
 
 
 # ── helpers ──
-def _fmt(n):
-    return f"{n:,}".replace(",", " ")
-
-
 def _next_order(trip):
     last = trip.messages.order_by("-order").first()
     return (last.order + 1) if last else 0
@@ -31,26 +28,9 @@ def _pay_budget(trip, category, fact):
         BudgetLine.objects.filter(trip=trip, category=category).update(fact_amount=fact)
 
 
-def _budget_now(trip):
-    lines = trip.budget_lines.all()
-    fact = sum(l.fact_amount for l in lines if l.fact_amount is not None)
-    estimate = sum(l.plan_amount for l in lines if l.fact_amount is None)
-    return fact, estimate, fact + estimate
-
-
-def _ctx(trip):
-    """Render context for templated step text (weather, hotel, budget)."""
-    fact, estimate, total = _budget_now(trip)
-    return {
-        "fact": _fmt(fact), "estimate": _fmt(estimate), "total": _fmt(total),
-        "fri": trip.weather.get("fri", ""), "sat": trip.weather.get("sat", ""),
-        "sun": trip.weather.get("sun", ""), "hotel": trip.hotel_name,
-    }
-
-
 def _run_silent(trip, step):
     """Emit a silent step's notices/cards and apply its plan mutation."""
-    fmt = _ctx(trip)
+    fmt = full_ctx(trip)
     for e in step.emits:
         kind = e["as"]
         if kind == "sys":
@@ -93,9 +73,15 @@ def n_advance(state):
     trip = Trip.objects.get(pk=state["trip_id"])
     steps = PHASES.get(trip.phase, [])
     idx = trip.step_index + 1 if state["action"] == "answer" else trip.step_index
-    while idx < len(steps) and steps[idx].silent:
-        _run_silent(trip, steps[idx])
-        idx += 1
+    while idx < len(steps):
+        step = steps[idx]
+        if step.silent:
+            _run_silent(trip, step)
+            idx += 1
+        elif not _step_active(trip, step):
+            idx += 1                         # skip apartments-only steps in hotel-path (no emit)
+        else:
+            break                            # active interactive step → stop and await
     trip.step_index = min(idx, len(steps))   # clamp: never drift past the phase end
     trip.save(update_fields=["step_index"])
     return {}

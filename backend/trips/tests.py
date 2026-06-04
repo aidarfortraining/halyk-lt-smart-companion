@@ -31,6 +31,12 @@ def _finish_phase0(c):
     return tid
 
 
+def _finish_phase1(c, tid):
+    _advance(c, tid, 1)
+    for v in ("kids", "taxi", "duman", "book", "market"):
+        _answer(c, tid, v)
+
+
 @pytest.mark.django_db
 def test_phase0_flow():
     c = Client()
@@ -103,6 +109,32 @@ def test_phase1_flow_rain():
     assert done == {"hotel", "docs", "insur", "budget", "pharma", "transfer", "kino", "resto"}
     locked = {p["key"] for p in s["plan"] if p["state"] == "locked"}
     assert locked == {"airba", "taxi"}
+
+
+@pytest.mark.django_db
+def test_phase2_hotel_path_skips_airba():
+    c = Client()
+    tid = _finish_phase0(c)
+    _finish_phase1(c, tid)
+
+    # advance to phase 2 → train_entry silent → taxi_arrival awaits (airba skipped)
+    s = _advance(c, tid, 2)
+    assert s["phase"] == 2
+    assert s["await_user"] is True
+    assert [ch["value"] for ch in s["chips"]] == ["taxi", "skip"]
+    assert any(m["kind"] == "concern" for m in s["messages"])        # "через 10 минут Астана"
+    # message text placeholders are rendered, not literal
+    assert not any("{hotel}" in m["text"] for m in s["messages"])
+    assert any("Holiday Inn" in m["text"] for m in s["messages"] if m["kind"] == "ai")
+
+    # call taxi → done; airba stays locked; budget unchanged (realized in phase 3 tracker)
+    s = _answer(c, tid, "taxi")
+    assert s["await_user"] is False
+    plan = {p["key"]: p["state"] for p in s["plan"]}
+    assert plan["taxi"] == "done"
+    assert plan["airba"] == "locked"
+    assert s["budget"]["fact"] == 105000
+    assert s["budget"]["total"] == 175000
 
 
 @pytest.mark.django_db

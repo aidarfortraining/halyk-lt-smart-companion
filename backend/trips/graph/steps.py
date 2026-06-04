@@ -29,6 +29,7 @@ class Step:
     ai_prompt: str = ""
     fallback: str = ""          # offline text (spec) — used until Веха 7
     plan_item: str = ""         # interactive: plan item this step completes
+    requires_apartments: bool = False   # step active only on the apartments branch (skipped in demo)
     chips: list = field(default_factory=list)
     # silent steps only:
     emits: list = field(default_factory=list)   # [{"as": "sys"/"time"/"concern", ...}]
@@ -215,25 +216,78 @@ PHASE_1 = [
 ]
 
 
-# phase → ordered steps. Phases 2–4 appended in later vehи.
+# ── ФАЗА 2: в поезде, утро прибытия (spec §4 этап 7, §7). Branch_housing: hotel → airba skip ──
+PHASE_2 = [
+    Step(
+        key="train_entry", phase=2, silent=True,
+        emits=[
+            {"as": "time", "text": "📲 Уведомление · Пт 5 июня · ~08:50 · В поезде"},
+            {"as": "concern", "title": "Через 10 минут — Астана",
+             "sub": "Отель {hotel} уже ждёт. Сейчас удобно вызвать такси — маршрут готов.",
+             "hint": "Выберите действие"},
+        ],
+    ),
+    # airba — только апарт-ветка; в hotel-path пропускается (остаётся locked).
+    Step(
+        key="airba", phase=2, plan_item="airba", requires_apartments=True,
+        concern="Продукты к приезду — с детьми в магазин с чемоданами неудобно",
+        ai_prompt=("Семья едет в апартаменты, через 40 минут Астана. Airba Fresh доставит продукты "
+                   "к приезду, пока они едут — с детьми и чемоданами в магазин неудобно."),
+        fallback=("Через 40 минут Астана. Airba Fresh успеет доставить продукты к приезду — "
+                  "с детьми и чемоданами по магазинам неудобно."),
+        chips=[
+            Chip(label="🛒 Заказать через Airba Fresh", sub="доставка к приезду", value="airba",
+                 plan_value="Продукты · Airba Fresh ✓", plan_tag="g"),
+            Chip(label="✕ Сами купим", sub="пропустить", value="skip",
+                 plan_value="Продукты самостоятельно", plan_tag="a"),
+        ],
+    ),
+    Step(
+        key="taxi_arrival", phase=2, plan_item="taxi",
+        concern="Стоять в проходе с детьми и чемоданами — нужно такси сразу",
+        ai_prompt=("Через 10 минут Астана. Маршрут готов: вокзал Нурлы Жол → {hotel}. Один тап — "
+                   "и такси уже едет. Говори коротко: клиент стоит в проходе с детьми и чемоданами."),
+        fallback=("Через 10 минут Астана. Маршрут готов: вокзал Нурлы Жол → {hotel}. "
+                  "Один тап — и такси уже едет."),
+        chips=[
+            Chip(label="🚖 Вызвать такси", sub="Вокзал → {hotel} · ~3 500 ₸", value="taxi",
+                 plan_value="Такси с вокзала ✓", plan_tag="g"),
+            Chip(label="✕ Сами доберёмся", sub="пропустить", value="skip",
+                 plan_value="Самостоятельно", plan_tag="a"),
+        ],
+    ),
+]
+
+
+# phase → ordered steps. Phases 3–4 appended in later vehи.
 PHASES: dict[int, list] = {
     0: PHASE_0,
     1: PHASE_1,
+    2: PHASE_2,
 }
 
 # Closing sys-notice emitted when a phase's steps are exhausted (await_user=false).
 PHASE_END: dict[int, str] = {
     0: "Основное готово. За 7 дней напомним про аптечку, за 3 дня — трансфер и план на выходные.",
     1: "Всё готово к поездке. Увидимся в поезде — за 40 минут до Астаны напомню про такси.",
+    2: "Вы в Астане! Дальше — живой трекер бюджета, напоминания и экстренная помощь под рукой.",
 }
+
+
+def _step_active(trip, step):
+    """A step is inactive if it needs the apartments branch and we're hotel-path (demo)."""
+    return not step.requires_apartments or trip.is_apartments
 
 
 def active_chips_and_await(trip):
     """Derive current chips + await_user from steps (not persisted; ARCHITECTURE.md §4)."""
+    from .context import text_ctx
+
     steps = PHASES.get(trip.phase, [])
     idx = trip.step_index
-    if idx < len(steps) and not steps[idx].silent:
-        step = steps[idx]
-        chips = [{"label": c.label, "sub": c.sub, "value": c.value} for c in step.chips]
+    if idx < len(steps) and not steps[idx].silent and _step_active(trip, steps[idx]):
+        ctx = text_ctx(trip)
+        chips = [{"label": c.label.format(**ctx), "sub": c.sub.format(**ctx), "value": c.value}
+                 for c in steps[idx].chips]
         return chips, True
     return [], False
