@@ -37,3 +37,4 @@ backend/frontend_dist/
 
 # Claude / agent state
 .claude/
+.playwright-mcp/

@@ -348,4 +348,4 @@ silent-шаги → сгенерировать следующий шаг, тре
 | Итоги (§5.3 `results`) | узел собирает таблицу | `serializers.build_results(trip)` выводит таблицу из `BudgetLine` (prepaid→«Предоплата»), при `phase==4`; шаг `results` лишь даёт сообщение + чипсы flywheel | данные уже финальные в БД; выводится, переживает рестарт |
 | LLM в тестах | — | autouse-фикстура с пустым `ANTHROPIC_API_KEY` форсирует fallback | smoke-тесты детерминированы, без сети |
 | Раздача SPA (§8) | Vite→`backend/static`, Django-вью `index.html` | **WhiteNoise `WHITENOISE_ROOT=frontend_dist` + index-file**: `/`→index.html, `/assets/*`→бандл; storage без manifest (Vite сам хеширует), `base='/'` (dev проще) | нет двойного хеша/ребейза ссылок; нет отдельной вью |
-| Frontend-тесты | — | `vitest`+jsdom render-тест на реальных снапшотах (нет Playwright-MCP) | проверка рантайма React без браузера |
+| Frontend-тесты | — | `vitest`+jsdom render-тест на реальных снапшотах; браузерный клик-прогон всех 5 фаз через Playwright (2026-06-05, live LLM, чисто) | рантайм React + полный E2E-путь подтверждены |

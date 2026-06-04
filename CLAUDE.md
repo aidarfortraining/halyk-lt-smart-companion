@@ -14,10 +14,11 @@ pharmacy→transfer→kino→restaurant→rain-gear → train→taxi → live tr
 Итоги+Flywheel), with the **real `claude-haiku-4-5`** LLM and a fallback on every step so it also runs
 fully offline. Budget converges 38 000 → 169 500 (Итоги 175 000 vs 169 500 🎯). React SPA served by
 WhiteNoise; state on a SQLite volume survives `docker compose restart`. Tests: backend 6 (pytest),
-frontend 2 (vitest). **`TASKS.md` is the per-veha tracker** (verification + as-built notes).
+frontend 2 (vitest). **`docs/TASKS.md` is the per-veha tracker** (verification + as-built notes).
 **Local dev:** see Commands below (venv + runserver + `npm run dev`).
-*(Not auto-verified: a real-browser pixel/click pass — the Playwright MCP was down at build time;
-the SPA is served at `localhost:8000` for manual check, React runtime is covered by the jsdom tests.)*
+*(Verified end-to-end in a real browser via Playwright (2026-06-05): the full 5-phase click-through
+with the live `claude-haiku-4-5` LLM runs clean — the budget invariant holds at every step
+(38 000 → 89 000 → 105 000 → 169 500, Итоги 175 000 vs 169 500 🎯), every request 200, no console errors.)*
 
 Layout: `backend/` — Django project `config/`, app `trips/` (`models.py`, `seed.py`,
 `serializers.py` = snapshot + Итоги, `views.py` = 4 endpoints, `graph/` = the LangGraph core
@@ -36,13 +37,13 @@ Chips/InputArea/TravelPlan/Budget/EmergencyBlock/SimButtons/ResultsScreen, `styl
 
 Source-of-truth docs:
 
-- `halyk_smart_travel_spec.md` — **source of truth for product logic & content** (the anxiety map, 10-stage journey, ~18 notifications, budget mechanics, weather adaptation). Russian.
-- `ARCHITECTURE.md` — **source of truth for the implementation** (tech stack, Django data model, LangGraph nodes, API contract, full 5-phase scope, build milestones, prototype-vs-spec content corrections; see §16 for as-built deltas). Russian. **Read this first before coding.**
-- `TASKS.md` — **build tracker**: the milestones (vehи 0–10, all ✅) expanded into tasks with verification + decisions taken. Russian. Read it to see exactly what was built and why.
-- `PLAN.md` — original build-architecture sketch & explicit non-goals (skeleton; superseded in detail by `ARCHITECTURE.md`). Russian.
-- `prototype.html` — **source of truth for visual look only** (single-file vanilla HTML/CSS/JS, ~1500 lines, Halyk brand, chat + Travel Plan). No framework, no build step — open directly in a browser. Will be rebuilt; its *content* (dates, texts, budget, train duration, document trigger) is **superseded** — see `ARCHITECTURE.md` §14.
+- `init-info/halyk_smart_travel_spec.md` — **source of truth for product logic & content** (the anxiety map, 10-stage journey, ~18 notifications, budget mechanics, weather adaptation). Russian.
+- `docs/ARCHITECTURE.md` — **source of truth for the implementation** (tech stack, Django data model, LangGraph nodes, API contract, full 5-phase scope, build milestones, prototype-vs-spec content corrections; see §16 for as-built deltas). Russian. **Read this first before coding.**
+- `docs/TASKS.md` — **build tracker**: the milestones (vehи 0–10, all ✅) expanded into tasks with verification + decisions taken. Russian. Read it to see exactly what was built and why.
+- `docs/PLAN.md` — original build-architecture sketch & explicit non-goals (skeleton; superseded in detail by `docs/ARCHITECTURE.md`). Russian.
+- `init-info/prototype.html` — **source of truth for visual look only** (single-file vanilla HTML/CSS/JS, ~1500 lines, Halyk brand, chat + Travel Plan). No framework, no build step — open directly in a browser. Will be rebuilt; its *content* (dates, texts, budget, train duration, document trigger) is **superseded** — see `docs/ARCHITECTURE.md` §14.
 
-When these sources conflict: **how to build → `ARCHITECTURE.md`, content/dates/text → `halyk_smart_travel_spec.md`, visual look → `prototype.html`.**
+When these sources conflict: **how to build → `docs/ARCHITECTURE.md`, content/dates/text → `init-info/halyk_smart_travel_spec.md`, visual look → `init-info/prototype.html`.**
 
 ### Commands
 
@@ -58,7 +59,7 @@ When these sources conflict: **how to build → `ARCHITECTURE.md`, content/dates
 - **Frontend build / tests:** `npm run build --prefix frontend` (→ `backend/frontend_dist`) · `npm run test --prefix frontend` (vitest, 2 render tests)
 - **Windows notes:** console is cp1252 — keep management-command/script `print` output ASCII (Cyrillic crashes the console; HTTP/JSON is UTF-8 and unaffected). PowerShell `$env:VAR=''` **removes** the var (it won't force-empty a key — use a real empty value path if you need fallback mode).
 
-### Stack (as built; see ARCHITECTURE.md §16 for as-built deltas)
+### Stack (as built; see docs/ARCHITECTURE.md §16 for as-built deltas)
 
 Django 5.2 + DRF (backend) + React 18 / Vite / TS (frontend) + SQLite + **LangChain / LangGraph 1.x** (the orchestration core — this graph *is* the product) + WhiteNoise (serves the SPA) + Gunicorn + Docker (single container). LLM messages generated via Anthropic model **`claude-haiku-4-5`** (env `ANTHROPIC_MODEL`); key in `.env` (gitignored) — **set it for live generation; without a key every step falls back to its canned text, so the demo still runs fully offline.** **Django ORM is the single source of truth for state; LangGraph runs stateless on top** (no LangGraph checkpointer).
 
@@ -70,7 +71,7 @@ Django 5.2 + DRF (backend) + React 18 / Vite / TS (frontend) + SQLite + **LangCh
 
 One family: Aidar / Alia / Aisha (9) / Timur (5). Almaty → Astana, **night train (~13h)**, **June 5–7** (depart Thu June 4 ~20:00, arrive Fri June 5 ~09:00). The client walks the full trip in chat across **5 phases**: Phase 0 (T−14: hotel → documents → insurance → budget) → Phase 1 (T−7/T−3: pharmacy → transfer → entertainment → restaurant → rain gear) → Phase 2 (on the train: groceries/taxi) → Phase 3 (in Astana: live budget tracker, reminders, emergency block, souvenirs) → Phase 4 (Results план/факт + Flywheel). Demo uses the **hotel path** (not apartments) and the **rainy-Saturday** weather scenario (richest logic). The proactive **document-expiry alert (Alia's ID expires July 28 → eGov)** is the key differentiator.
 
-Each AI step emits a short message in "anxiety language"; the client replies with chips (human-in-the-loop). The right column is a live **Travel Plan** of 10 items (locked / wait / done), plus an always-visible **emergency block**. Inline simulation buttons advance phases. Full stage→step→notification mapping is in `ARCHITECTURE.md` §2.
+Each AI step emits a short message in "anxiety language"; the client replies with chips (human-in-the-loop). The right column is a live **Travel Plan** of 10 items (locked / wait / done), plus an always-visible **emergency block**. Inline simulation buttons advance phases. Full stage→step→notification mapping is in `docs/ARCHITECTURE.md` §2.
 
 ### Budget model (recurring invariant)
 
