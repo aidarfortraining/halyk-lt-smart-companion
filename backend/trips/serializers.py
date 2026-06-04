@@ -2,6 +2,7 @@
 render snapshot for the frontend, which replaces its state wholesale."""
 from rest_framework import serializers
 
+from .graph.steps import active_chips_and_await
 from .models import BudgetLine, Message, PlanItem, Trip
 
 
@@ -44,8 +45,9 @@ def build_budget(trip):
     }
 
 
-def build_snapshot(trip, *, chips=None, await_user=False, results=None):
-    """Full render snapshot. chips/await_user/results are wired in by the graph (Веха 2+)."""
+def build_snapshot(trip, *, results=None):
+    """Full render snapshot. chips/await_user are derived from steps (not persisted)."""
+    chips, await_user = active_chips_and_await(trip)
     return {
         "trip": TripSerializer(trip).data,
         "plan": PlanItemSerializer(trip.plan_items.all(), many=True).data,
@@ -53,7 +55,7 @@ def build_snapshot(trip, *, chips=None, await_user=False, results=None):
         "budget": build_budget(trip),
         "emergency": trip.emergency,
         "phase": trip.phase,
-        "chips": chips or [],
+        "chips": chips,
         "await_user": await_user,
         "results": results,
     }

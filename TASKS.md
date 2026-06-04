@@ -49,20 +49,21 @@
 
 ---
 
-## Веха 2 — LangGraph скелет, фаза 0 (ARCHITECTURE §5, §6, §7-fallback)
+## Веха 2 — LangGraph скелет, фаза 0 (ARCHITECTURE §5, §6, §7-fallback) ✅
 
-- [ ] `trips/graph/state.py` — transient TypedDict состояния прогона.
-- [ ] `trips/graph/steps.py` — декларация шагов **фазы 0**: `hotel`, `docs`(silent), `insurance`,
-      `budget`(silent). Контент из спеки (не из прототипа).
-- [ ] `trips/graph/nodes.py` — `router`, `apply_answer`, `advance` (прогон silent-шагов),
-      `generate` (пока только fallback-текст), `persist`.
-- [ ] `trips/graph/journey.py` — сборка графа и рёбра.
-- [ ] `trips/graph/llm.py` — пока заглушка, возвращающая `step.fallback`.
-- [ ] Эндпоинты `POST /api/trip/start` (идемпотентный seed + первое AI-сообщение),
-      `POST /api/trip/<id>/answer` (`{chip_value}`).
-- **Проверка:** `start` → `hotel`; ответ чипом → `docs`(silent: «удостоверение Алии истекает
-      **28 июля**» → eGov) → `insurance` (3 тарифа) → `budget`(silent). Пункты переходят в `done`,
-      факт 38 000 → 89 000, расчётное 137 000 → 86 000, итог стабилен 175 000.
+- [x] `trips/graph/state.py` — transient TypedDict (`trip_id`, `action`, `chip_value`).
+- [x] `trips/graph/steps.py` — шаги фазы 0 (`hotel`/`docs`-silent/`insurance`/`budget`-silent),
+      dataclasses `Chip`/`Step`, контент из спеки; `active_chips_and_await` (вывод, не персист).
+- [x] `trips/graph/nodes.py` — `apply_answer`, `advance` (прогон silent + плановые/бюджетные мутации),
+      `generate` (fallback + закрытие фазы). Узлы пишут в Django; вью оборачивает в `transaction.atomic`.
+- [x] `trips/graph/journey.py` — сборка `StateGraph` (apply_answer → advance → generate) + `run()`.
+- [x] `trips/graph/llm.py` — заглушка → `step.fallback` (реальный вызов в Вехе 7).
+- [x] Эндпоинты `POST /api/trip/start` (идемпотентно), `POST /api/trip/<id>/answer`.
+- **Проверка:** ✅ `start`→hotel (chips booking/appart/booked); answer(booking) → docs silent
+      («удостоверение **Алии** до **28.07** → eGov», tag a) → insurance (3 тарифа); answer(family) →
+      budget silent → закрытие фазы. Все 4 пункта `done`; **факт 38 000→86 000→89 000**, итог
+      стабилен 175 000; `await_user` корректно true→false. Состояние пережило рестарт сервера
+      (`GET /state` восстановил экран без повторного прогона графа).
 
 ---
 
