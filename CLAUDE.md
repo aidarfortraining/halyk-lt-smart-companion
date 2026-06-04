@@ -8,14 +8,24 @@ A **demo-day prototype** for Halyk Bank: an AI travel companion that turns a one
 
 ### Current state
 
-**Build in progress** (backend-first, per `ARCHITECTURE.md §13`). Done: vehи 0–3 — Django/DRF
-backend with the LangGraph core running **phases 0–1** end-to-end on fallback texts. Not yet built:
-phases 2–4, real LLM, the React frontend, Docker. **`TASKS.md` is the live execution tracker**
-(per-veha checklist with verification + as-built notes) — read it to see exactly what's done.
+**Build in progress** (backend-first, per `ARCHITECTURE.md §13`). Done: **vehи 0–7 — the backend is
+complete.** The LangGraph core runs the **full journey phases 0→4** (hotel→docs→insurance→budget →
+pharmacy→transfer→kino→restaurant→rain-gear → train→taxi → live tracker/reminders/souvenirs →
+Итоги+Flywheel) end-to-end, with the **real `claude-haiku-4-5`** LLM and a fallback on every step so it
+also runs fully offline. Budget converges 38 000 → 169 500 (Итоги 175 000 vs 169 500 🎯); 6 smoke tests
+green. Not yet built: the **React frontend** (Vite scaffold only, not wired) and **Docker** (vehи 8–9).
+**`TASKS.md` is the live execution tracker** (per-veha checklist with verification + as-built notes).
 
-Built so far: `backend/` (Django project `config/`, app `trips/` with `models.py`, `seed.py`,
-`serializers.py`, `views.py`, `graph/` = the LangGraph core, `tests.py` smoke tests),
-`frontend/` (Vite + React 18 + TS scaffold, not yet wired). Dev DB `backend/db.sqlite3` (gitignored).
+Built so far: `backend/` — Django project `config/`, app `trips/` with `models.py`, `seed.py`,
+`serializers.py` (snapshot + Итоги), `views.py` (4 endpoints), `graph/` = the LangGraph core
+(`state.py`, `steps.py` = all 5 phases declared, `nodes.py`, `journey.py`, `llm.py`, `context.py`),
+`tests.py` (smoke), `management/commands/seed_demo.py`. `frontend/` (Vite + React 18 + TS scaffold,
+not yet wired). Dev DB `backend/db.sqlite3` (gitignored).
+
+**API:** `POST /api/trip/start` · `GET /api/trip/<id>/state` · `POST /api/trip/<id>/answer` (`{chip_value}`)
+· `POST /api/trip/<id>/advance` (`{to_phase}`). Every response is one full render snapshot
+(`trip, plan[10], messages[], budget{fact,estimate,total,lines}, emergency[], phase, chips, await_user, results?`);
+`chips`/`await_user`/`results` are derived from `steps.py`, not persisted.
 
 Source-of-truth docs:
 

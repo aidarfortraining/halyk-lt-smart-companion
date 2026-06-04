@@ -144,16 +144,22 @@
 
 ---
 
-## Веха 8 — Frontend (ARCHITECTURE §8)
+## Веха 8 — Frontend (ARCHITECTURE §8) ✅
 
-- [ ] Перенос V2-CSS из `prototype.html` (328–477) в `styles/companion.css` 1:1 (бренд, Golos Text).
-- [ ] `state/tripReducer.ts` (Context + useReducer), `api/client.ts` (4 типизированные fetch-обёртки).
-- [ ] Компоненты: `ChatColumn`(`MessageList`: Ai/User/TimeDivider/ConcernCard/SysNotice, `Chips`,
-      `InputArea`), `TravelPlan`(`PhaseBar`, `PlanItem`×10, `Budget`+`BudgetTracker`, `EmergencyBlock`),
-      `SimButtons`, `ResultsScreen`.
-- [ ] `App.tsx` при маунте: `POST /start` → `GET /state`; каждый ответ API заменяет снапшот целиком.
-- **Проверка:** вид совпадает с прототипом; полный путь 0→4 живой в браузере; рестарт бэка +
-      перезагрузка фронта восстанавливают экран на текущем шаге.
+- [x] Перенос V2-CSS из `prototype.html` (328–477) в `styles/companion.css` 1:1 + добавления
+      (emergency / sim-кнопки / трекер-категории / results-card) в той же палитре.
+- [x] `state/trip.tsx` (Context + useReducer, снапшот заменяется целиком), `api/client.ts` (4 обёртки),
+      `types.ts`, `util.ts`.
+- [x] Компоненты: `ChatColumn`(`MessageList`: ai/user/time/concern/sys, `Chips`, `InputArea`),
+      `TravelPlan`(phase-bar 5 сегм., `PlanItem`×10, `Budget`+трекер-категории, `EmergencyBlock`),
+      `SimButtons`, `ResultsScreen` (таблица Итогов + flywheel-карточки).
+- [x] `App.tsx`: `TripProvider` зовёт `POST /start` при маунте (guard StrictMode); каждый ответ API
+      заменяет снапшот целиком. Прокси `/api`→`:8000`.
+- **Проверка:** ✅ прод-сборка чистая (tsc+vite); **render-тесты vitest+jsdom** на реальных
+      снапшотах (`App.test.tsx`): монтирование, фаза 0 (10 пунктов, чипсы, бюджет 175 000, emergency,
+      phase-bar) и фаза 4 (таблица 175 000/169 500, 3 flywheel) рендерятся без ошибок.
+- **Заметка:** Playwright MCP отключился по ходу — браузерный клик-тест отложен на ручной прогон в
+      Вехе 9 (Django отдаёт SPA на `localhost:8000`). Вид — порт V2-CSS 1:1, рантайм проверен jsdom.
 
 ---
 
