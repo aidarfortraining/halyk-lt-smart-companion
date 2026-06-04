@@ -19,11 +19,15 @@ frontend 2 (vitest). **`TASKS.md` is the per-veha tracker** (verification + as-b
 *(Not auto-verified: a real-browser pixel/click pass — the Playwright MCP was down at build time;
 the SPA is served at `localhost:8000` for manual check, React runtime is covered by the jsdom tests.)*
 
-Built so far: `backend/` — Django project `config/`, app `trips/` with `models.py`, `seed.py`,
-`serializers.py` (snapshot + Итоги), `views.py` (4 endpoints), `graph/` = the LangGraph core
-(`state.py`, `steps.py` = all 5 phases declared, `nodes.py`, `journey.py`, `llm.py`, `context.py`),
-`tests.py` (smoke), `management/commands/seed_demo.py`. `frontend/` (Vite + React 18 + TS scaffold,
-not yet wired). Dev DB `backend/db.sqlite3` (gitignored).
+Layout: `backend/` — Django project `config/`, app `trips/` (`models.py`, `seed.py`,
+`serializers.py` = snapshot + Итоги, `views.py` = 4 endpoints, `graph/` = the LangGraph core
+[`state.py`, `steps.py` = all 5 phases declared, `nodes.py`, `journey.py`, `llm.py`, `context.py`],
+`tests.py` = pytest smoke, `management/commands/seed_demo.py`). `frontend/` — Vite + React 18 + TS SPA
+(`api/client.ts`, `state/trip.tsx`, `types.ts`, `util.ts`, `components/` = ChatColumn/MessageList/
+Chips/InputArea/TravelPlan/Budget/EmergencyBlock/SimButtons/ResultsScreen, `styles/companion.css`
+= V2-CSS port of the prototype, `App.test.tsx` = vitest render test on captured snapshots).
+`Dockerfile` (multi-stage) + `docker-compose.yml` (SQLite on a named volume). Dev DB
+`backend/db.sqlite3` (gitignored); the prod SPA build lands in `backend/frontend_dist` (gitignored).
 
 **API:** `POST /api/trip/start` · `GET /api/trip/<id>/state` · `POST /api/trip/<id>/answer` (`{chip_value}`)
 · `POST /api/trip/<id>/advance` (`{to_phase}`). Every response is one full render snapshot
@@ -34,27 +38,29 @@ Source-of-truth docs:
 
 - `halyk_smart_travel_spec.md` — **source of truth for product logic & content** (the anxiety map, 10-stage journey, ~18 notifications, budget mechanics, weather adaptation). Russian.
 - `ARCHITECTURE.md` — **source of truth for the implementation** (tech stack, Django data model, LangGraph nodes, API contract, full 5-phase scope, build milestones, prototype-vs-spec content corrections; see §16 for as-built deltas). Russian. **Read this first before coding.**
-- `TASKS.md` — **live build tracker**: the 9 milestones expanded into tasks with verification + decisions taken. Russian.
+- `TASKS.md` — **build tracker**: the milestones (vehи 0–10, all ✅) expanded into tasks with verification + decisions taken. Russian. Read it to see exactly what was built and why.
 - `PLAN.md` — original build-architecture sketch & explicit non-goals (skeleton; superseded in detail by `ARCHITECTURE.md`). Russian.
 - `prototype.html` — **source of truth for visual look only** (single-file vanilla HTML/CSS/JS, ~1500 lines, Halyk brand, chat + Travel Plan). No framework, no build step — open directly in a browser. Will be rebuilt; its *content* (dates, texts, budget, train duration, document trigger) is **superseded** — see `ARCHITECTURE.md` §14.
 
 When these sources conflict: **how to build → `ARCHITECTURE.md`, content/dates/text → `halyk_smart_travel_spec.md`, visual look → `prototype.html`.**
 
-### Commands (local dev)
+### Commands
 
-The venv is `.venv` (Python 3.11) at the repo root; backend lives in `backend/` (run `manage.py` from there or as `backend\manage.py`).
+**Run the demo (one container):** `docker compose up` → `localhost:8000`, end-to-end (first run builds the image; the CMD does `migrate` + `seed_demo` + gunicorn; SQLite state on the `sqlite-data` volume survives `docker compose restart`). Stop with `docker compose down` (add `-v` to wipe demo state). `.env` (gitignored) supplies `ANTHROPIC_API_KEY`/`ANTHROPIC_MODEL`.
+
+**Local dev** (venv is `.venv`, Python 3.11, at the repo root; backend lives in `backend/`, run `manage.py` as `backend\manage.py`):
 
 - **Backend deps:** `.venv\Scripts\python.exe -m pip install -r backend\requirements.txt`
 - **Migrate + seed:** `.venv\Scripts\python.exe backend\manage.py migrate` then `... seed_demo` (idempotent reference Trip)
 - **Run backend:** `.venv\Scripts\python.exe backend\manage.py runserver` → `localhost:8000` (API under `/api/`)
-- **Smoke tests:** `.venv\Scripts\python.exe -m pytest backend -q` (the only tests, per non-goals)
-- **Frontend:** `npm install --prefix frontend`, `npm run dev --prefix frontend` (Vite, proxies `/api` → `:8000`), `npm run build --prefix frontend` (emits to `backend/frontend_dist`)
-- **Final target (veha 9):** `docker compose up` → `localhost:8000` end-to-end.
-- **Windows note:** console is cp1252 — keep management-command/script `print` output ASCII (Cyrillic crashes the console; HTTP/JSON is UTF-8 and unaffected).
+- **Backend tests:** `.venv\Scripts\python.exe -m pytest backend -q` (6 smoke tests)
+- **Frontend dev:** `npm install --prefix frontend`, `npm run dev --prefix frontend` (Vite, proxies `/api` → `:8000`)
+- **Frontend build / tests:** `npm run build --prefix frontend` (→ `backend/frontend_dist`) · `npm run test --prefix frontend` (vitest, 2 render tests)
+- **Windows notes:** console is cp1252 — keep management-command/script `print` output ASCII (Cyrillic crashes the console; HTTP/JSON is UTF-8 and unaffected). PowerShell `$env:VAR=''` **removes** the var (it won't force-empty a key — use a real empty value path if you need fallback mode).
 
-### Planned stack (see ARCHITECTURE.md)
+### Stack (as built; see ARCHITECTURE.md §16 for as-built deltas)
 
-Django + DRF (backend) + React 18 / Vite / TS (frontend) + SQLite + **LangChain / LangGraph** (the orchestration core — this graph *is* the product) + WhiteNoise + Gunicorn + Docker (single container). LLM messages generated via Anthropic API model **`claude-haiku-4-5`** (env `ANTHROPIC_MODEL`), key in `.env` (gitignored, currently empty). **Django ORM is the single source of truth for state; LangGraph runs stateless on top** (no LangGraph checkpointer).
+Django 5.2 + DRF (backend) + React 18 / Vite / TS (frontend) + SQLite + **LangChain / LangGraph 1.x** (the orchestration core — this graph *is* the product) + WhiteNoise (serves the SPA) + Gunicorn + Docker (single container). LLM messages generated via Anthropic model **`claude-haiku-4-5`** (env `ANTHROPIC_MODEL`); key in `.env` (gitignored) — **set it for live generation; without a key every step falls back to its canned text, so the demo still runs fully offline.** **Django ORM is the single source of truth for state; LangGraph runs stateless on top** (no LangGraph checkpointer).
 
 - Run target: `docker compose up` → `localhost:8000`, end-to-end in one step.
 - **The demo must run fully offline**: every AI step has a prepared `fallback` so no network = still a complete run.
