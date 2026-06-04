@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Travel Companion · Halyk</title>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+/* ══ V1 STYLES — wizard steps 1–3 ══ */
+
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  :root{
+    --halyk:#00B14F;--halyk-dark:#009644;--halyk-light:#E6F7EE;
+    --bg:#EEF1F4;--card:#FFFFFF;--text:#1A1A1A;--muted:#6B7280;--border:#E5E7EB;
+    --green:#10B981;--amber:#F59E0B;--red:#EF4444;--blue:#3B82F6;
+  }
+  html,body{height:100%;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,sans-serif;
+    background:var(--bg);color:var(--text);min-height:100vh;}
+
+  /* ===== Top bar ===== */
+  .topbar{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:16px;padding:0 28px;height:62px;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand .logo{width:30px;height:30px;border-radius:8px;background:var(--halyk);display:flex;align-items:center;
+    justify-content:center;color:#fff;font-weight:800;font-size:16px;}
+  .brand b{font-size:15px;}
+  .brand small{color:var(--muted);font-weight:600;font-size:12px;margin-left:2px;}
+  .stepper{margin-left:auto;display:flex;align-items:center;gap:12px;}
+  .step-text{font-size:12px;color:var(--muted);font-weight:600;}
+  .step-dots{display:flex;gap:5px;}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:all .2s;}
+  .dot.active{background:var(--halyk);width:22px;border-radius:4px;}
+  .ghost{background:transparent;border:1px solid var(--border);border-radius:20px;padding:7px 13px;font-size:12px;
+    color:var(--muted);cursor:pointer;font-weight:600;}
+  .ghost:hover{border-color:var(--halyk);color:var(--halyk-dark);}
+
+  /* ===== Stage / container ===== */
+  .stage{padding:30px 28px 70px;}
+  .container{max-width:980px;margin:0 auto;position:relative;}
+  .page-head{display:flex;align-items:center;gap:16px;margin-bottom:22px;}
+  .back-btn{width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--text);cursor:pointer;flex-shrink:0;}
+  .back-btn:hover{border-color:var(--halyk);color:var(--halyk-dark);}
+  .back-btn.hidden{display:none;}
+  .page-title{font-size:25px;font-weight:800;line-height:1.15;letter-spacing:-.3px;}
+  .page-sub{font-size:14px;color:var(--muted);margin-top:3px;}
+
+  .page{display:none;}
+  .page.active{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+  /* ===== Layout helpers ===== */
+  .narrow{max-width:620px;margin:0 auto;}
+  .form-narrow{max-width:600px;margin:0 auto;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;}
+  .grid-side{display:grid;grid-template-columns:1.65fr 1fr;gap:24px;align-items:start;}
+  .side{position:sticky;top:84px;}
+  .wizard-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .wizard-grid .full{grid-column:1/-1;}
+  .panel{background:#fff;border-radius:18px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.05);}
+  .panel-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;}
+  .panel-note{font-size:12px;color:var(--muted);margin:12px 0;line-height:1.5;}
+
+  /* ===== Cards / inputs ===== */
+  .card{background:var(--card);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  .card-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;}
+  .input{background:var(--card);border-radius:12px;padding:14px 16px;margin-bottom:12px;border:1px solid var(--border);
+    font-size:15px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .12s;}
+  .input:hover{border-color:#cbd5e1;}
+  .input-icon{font-size:20px;}
+  .input-label{font-size:11px;color:var(--muted);text-transform:uppercase;}
+  .input-value{font-weight:600;margin-top:2px;}
+  .input-content{flex:1;}
+  .input-content input{border:none;outline:none;font-size:15px;font-weight:600;width:100%;background:transparent;color:var(--text);}
+  .input-chevron{color:var(--muted);font-size:18px;}
+
+  .slider-head{display:flex;justify-content:space-between;margin-bottom:10px;}
+  .slider-label{font-size:11px;color:var(--muted);text-transform:uppercase;}
+  .slider-value{font-weight:700;color:var(--halyk);}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:var(--border);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--halyk);box-shadow:0 2px 6px rgba(0,0,0,.15);cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--halyk);cursor:pointer;}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+  .chips:last-child{margin-bottom:0;}
+  .chip{padding:9px 15px;background:var(--card);border:1.5px solid var(--border);border-radius:100px;font-size:13px;font-weight:500;cursor:pointer;transition:all .12s;user-select:none;}
+  .chip:hover{border-color:#cbd5e1;}
+  .chip.active{background:var(--halyk-light);border-color:var(--halyk);color:var(--halyk-dark);}
+
+  .btn{background:var(--halyk);color:#fff;padding:15px 18px;border-radius:13px;text-align:center;font-weight:700;font-size:15px;
+    margin-top:10px;box-shadow:0 4px 12px rgba(0,177,79,.28);cursor:pointer;border:none;width:100%;transition:transform .08s,background .12s;}
+  .btn:hover{background:var(--halyk-dark);}
+  .btn:active{transform:scale(.99);}
+  .btn[disabled]{opacity:.45;box-shadow:none;cursor:not-allowed;}
+  .btn-secondary{background:#fff;color:var(--text);box-shadow:none;border:1.5px solid var(--border);}
+  .btn-secondary:hover{background:#f8fafc;border-color:#cbd5e1;}
+  .btn-row{display:flex;gap:10px;}
+  .btn-row .btn{flex:1;}
+
+  .family{display:flex;margin-top:6px;}
+  .avatar{width:32px;height:32px;border-radius:50%;background:var(--halyk-light);color:var(--halyk-dark);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin-left:-6px;border:2px solid #fff;flex-shrink:0;}
+  .avatar:first-child{margin-left:0;}
+  .avatar.k{background:#FEF3C7;color:#92400E;}
+
+  /* tabs */
+  .tabs{display:flex;gap:10px;margin-bottom:16px;}
+  .tab{flex:1;text-align:center;padding:12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-weight:600;background:#fff;cursor:pointer;}
+  .tab:hover{border-color:#cbd5e1;}
+  .tab.active{background:var(--halyk-light);border-color:var(--halyk);color:var(--halyk-dark);}
+
+  /* tickets */
+  .ticket{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:12px;position:relative;cursor:pointer;transition:border-color .12s,box-shadow .12s;}
+  .ticket:hover{border-color:#cbd5e1;box-shadow:0 2px 10px rgba(0,0,0,.05);}
+  .ticket.selected{border-color:var(--halyk);background:var(--halyk-light);}
+  .ticket.selected::after{content:'✓';position:absolute;top:14px;right:14px;width:22px;height:22px;background:var(--halyk);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;}
+  .ticket-top{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+  .ticket-carrier{font-size:14px;font-weight:700;}
+  .ticket-type{font-size:11px;color:var(--muted);margin-top:1px;}
+  .ticket-tag{font-size:10px;font-weight:700;padding:4px 9px;border-radius:100px;background:var(--halyk-light);color:var(--halyk-dark);}
+  .ticket-route{display:flex;align-items:center;}
+  .ticket-time{font-size:17px;font-weight:800;}
+  .ticket-city{font-size:11px;color:var(--muted);margin-top:1px;}
+  .ticket-mid{flex:1;text-align:center;padding:0 14px;}
+  .ticket-dur{font-size:10px;color:var(--muted);}
+  .ticket-arrow{height:1px;background:var(--border);position:relative;margin-top:4px;}
+  .ticket-arrow::after{content:'→';position:absolute;right:-2px;top:-9px;font-size:12px;color:var(--muted);}
+  .ticket-foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+  .ticket-price{font-size:18px;font-weight:800;}
+  .leg-tag{font-size:10px;font-weight:700;color:var(--halyk-dark);text-transform:uppercase;margin:8px 0 6px;}
+  .pax{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #F3F4F6;}
+  .pax:last-child{border-bottom:none;}
+  .bought-badge{background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:4px 9px;border-radius:100px;white-space:nowrap;}
+  .bought-note{display:flex;align-items:center;gap:12px;background:var(--halyk-light);border:1px solid var(--halyk);border-radius:14px;padding:14px 16px;margin-bottom:16px;}
+
+  /* variants */
+  .category{margin-bottom:18px;}
+  .category-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .category-icon{font-size:18px;}
+  .category-name{font-size:15px;font-weight:700;}
+  .variants{display:flex;gap:10px;flex-wrap:wrap;}
+  .variant{flex:0 0 auto;min-width:140px;background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;position:relative;transition:border-color .12s;}
+  .variant:hover{border-color:#cbd5e1;}
+  .variant.selected{border-color:var(--halyk);background:var(--halyk-light);}
+  .variant.selected::after{content:'✓';position:absolute;top:8px;right:8px;width:18px;height:18px;background:var(--halyk);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;}
+  .variant-tag{font-size:10px;color:var(--muted);}
+  .variant-name{font-size:13px;font-weight:600;margin:4px 0;}
+  .variant-price{font-size:14px;font-weight:700;}
+
+  /* budget */
+  .budget-bar{background:#fff;border-radius:14px;padding:14px 16px;border:1.5px solid var(--green);}
+  .budget-bar.amber{border-color:var(--amber);}
+  .budget-bar.red{border-color:var(--red);}
+  .budget-head{display:flex;justify-content:space-between;margin-bottom:8px;}
+  .budget-label{font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:600;}
+  .budget-amount{font-size:14px;font-weight:700;}
+  .budget-amount .val{color:var(--green);}
+  .budget-bar.amber .val{color:var(--amber);}.budget-bar.red .val{color:var(--red);}
+  .budget-track{height:7px;background:#F3F4F6;border-radius:4px;overflow:hidden;}
+  .budget-fill{height:100%;background:var(--green);transition:width .3s;}
+  .budget-bar.amber .budget-fill{background:var(--amber);}.budget-bar.red .budget-fill{background:var(--red);}
+
+  .stay-links{display:flex;gap:10px;}
+  .link-btn{flex:1;text-align:center;padding:13px;border-radius:12px;border:1.5px solid var(--border);background:#fff;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);cursor:pointer;}
+  .link-btn:hover{border-color:#cbd5e1;}
+
+  /* share */
+  .share-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+  .share-btn{background:#fff;padding:18px 12px;border-radius:14px;text-align:center;border:1px solid var(--border);cursor:pointer;}
+  .share-btn:hover{border-color:var(--halyk);}
+  .share-icon{font-size:30px;display:block;margin-bottom:8px;}
+  .share-name{font-size:12px;font-weight:600;}
+  .toggle-row{display:flex;justify-content:space-between;align-items:center;background:#fff;padding:16px;border-radius:12px;margin-bottom:14px;}
+  .toggle{width:46px;height:27px;background:var(--border);border-radius:14px;position:relative;cursor:pointer;flex-shrink:0;transition:background .15s;}
+  .toggle::after{content:'';width:23px;height:23px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:left .15s;}
+  .toggle.on{background:var(--halyk);}.toggle.on::after{left:21px;}
+
+  /* pay + card */
+  .pay-item{display:flex;align-items:center;padding:14px 0;border-bottom:1px solid var(--border);}
+  .pay-item:last-child{border-bottom:none;}
+  .pay-item.paid .pay-name,.pay-item.paid .pay-price{color:var(--muted);}
+  .pay-icon{width:40px;height:40px;border-radius:10px;background:var(--halyk-light);display:flex;align-items:center;justify-content:center;font-size:19px;margin-right:12px;flex-shrink:0;}
+  .pay-content{flex:1;}
+  .pay-name{font-size:14px;font-weight:600;}
+  .pay-where{font-size:12px;color:var(--muted);margin-top:2px;}
+  .pay-price{font-size:15px;font-weight:700;}
+  .card-display{background:linear-gradient(135deg,var(--halyk) 0%,var(--halyk-dark) 100%);color:#fff;padding:22px;border-radius:18px;margin-bottom:14px;position:relative;overflow:hidden;}
+  .card-display::before{content:'';position:absolute;right:-50px;top:-50px;width:170px;height:170px;background:rgba(255,255,255,.08);border-radius:50%;}
+  .card-bank{font-size:12px;opacity:.85;font-weight:600;}
+  .card-num{font-size:20px;font-weight:600;margin-top:16px;letter-spacing:1px;font-variant-numeric:tabular-nums;}
+  .card-row{display:flex;justify-content:space-between;margin-top:16px;}
+  .card-cell-label{opacity:.7;font-size:9px;text-transform:uppercase;}
+  .card-cell-value{font-weight:600;margin-top:2px;font-size:14px;}
+  .copy{margin-left:6px;cursor:pointer;opacity:.85;font-size:12px;}
+
+  /* checklist */
+  .check-item{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid #F3F4F6;cursor:pointer;}
+  .check-item:last-child{border-bottom:none;}
+  .check-box{width:21px;height:21px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;}
+  .check-box.on{background:var(--green);border-color:var(--green);color:#fff;}
+  .check-box.warn{background:var(--amber);border-color:var(--amber);color:#fff;}
+  .check-text{font-size:14px;line-height:1.4;}
+  .check-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+  .weather-row{display:flex;justify-content:space-around;text-align:center;padding:8px 0;}
+
+  /* dashboard */
+  .map{height:200px;border-radius:16px;position:relative;margin-bottom:16px;overflow:hidden;
+    background:radial-gradient(circle at 30% 40%,#C7F0D6 0,transparent 22%),radial-gradient(circle at 70% 60%,#FED7AA 0,transparent 22%),linear-gradient(135deg,#E0F2FE 0%,#DBEAFE 100%);}
+  .map::before{content:'';position:absolute;inset:0;background-size:36px 36px;background:linear-gradient(90deg,transparent 49%,rgba(0,0,0,.05) 50%,transparent 51%),linear-gradient(0deg,transparent 49%,rgba(0,0,0,.05) 50%,transparent 51%);}
+  .pin{position:absolute;transform:translate(-50%,-100%);font-size:26px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.2));}
+  .now-card{background:#fff;border-left:4px solid var(--halyk);padding:14px 16px;border-radius:10px;margin-bottom:14px;display:flex;align-items:center;gap:14px;}
+  .now-icon{width:44px;height:44px;background:var(--halyk-light);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;}
+  .now-time{font-size:11px;color:var(--halyk);font-weight:700;}
+  .now-event{font-size:15px;font-weight:600;margin-top:2px;}
+  .quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px;}
+  .qa{background:#fff;border-radius:12px;padding:14px 6px;text-align:center;cursor:pointer;border:1px solid transparent;}
+  .qa:hover{border-color:var(--halyk);}
+  .qa-icon{font-size:24px;display:block;margin-bottom:6px;}
+  .qa-label{font-size:11px;font-weight:600;}
+
+  /* recap */
+  .recap-hero{background:linear-gradient(135deg,var(--halyk) 0%,var(--halyk-dark) 100%);color:#fff;padding:28px;border-radius:18px;margin-bottom:16px;text-align:center;}
+  .recap-emoji{font-size:46px;}
+  .recap-title{font-size:22px;font-weight:800;margin-top:8px;}
+  .recap-sub{font-size:13px;opacity:.85;margin-top:4px;}
+  .stat-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;}
+  .stat-label{font-size:14px;}
+  .stat-value{font-weight:700;font-size:15px;}
+  .savings{color:var(--green);}
+  .pie{display:flex;flex-direction:column;gap:10px;}
+  .pie-row{display:flex;align-items:center;gap:10px;font-size:13px;}
+  .pie-dot{width:11px;height:11px;border-radius:3px;}
+  .pie-bar{flex:1;height:7px;background:var(--border);border-radius:4px;overflow:hidden;}
+  .pie-fill{height:100%;}
+  .pie-pct{font-weight:700;font-size:12px;width:38px;text-align:right;}
+  .next-trips{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .next-trip{background:#fff;border-radius:14px;padding:16px;border:1px solid var(--border);cursor:pointer;}
+  .next-trip:hover{border-color:var(--halyk);}
+  .next-emoji{font-size:30px;}
+  .next-name{font-size:14px;font-weight:700;margin-top:6px;}
+  .next-meta{font-size:12px;color:var(--muted);margin-top:2px;}
+  .next-price{font-size:13px;color:var(--halyk);font-weight:700;margin-top:8px;}
+
+  .ai-think{background:linear-gradient(135deg,#F3E8FF 0%,#FCE7F3 100%);border-radius:14px;padding:16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+  .ai-spark{font-size:20px;}
+  .ai-text{font-size:13px;flex:1;}
+  .ai-text strong{color:#7C3AED;}
+  .hint{background:#fff;border-radius:12px;padding:14px;font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px;}
+
+  /* loading + toast */
+  .loading{position:fixed;inset:0;background:rgba(238,241,244,.92);display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:60;}
+  .loading.show{display:flex;}
+  .spinner{width:52px;height:52px;border:4px solid var(--halyk-light);border-top-color:var(--halyk);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-text{font-size:14px;color:var(--muted);font-weight:600;}
+  .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:#1A1A1A;color:#fff;font-size:14px;padding:12px 20px;border-radius:12px;opacity:0;transition:all .25s;z-index:70;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.25);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* modal */
+  .modal{position:fixed;inset:0;background:rgba(17,24,39,.5);display:none;align-items:center;justify-content:center;z-index:80;padding:16px;}
+  .modal.show{display:flex;animation:fade .2s ease;}
+  .modal-card{background:#fff;border-radius:20px;max-width:440px;width:100%;max-height:86vh;overflow:auto;padding:22px 22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  .modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px;}
+  .modal-title{font-size:18px;font-weight:800;}
+  .modal-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+  .modal-close{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:#fff;color:var(--muted);font-size:14px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .modal-close:hover{border-color:var(--halyk);color:var(--halyk-dark);}
+  .doc-banner{display:flex;align-items:center;gap:10px;background:var(--halyk-light);border:1px solid var(--halyk);color:var(--halyk-dark);border-radius:12px;padding:12px 14px;font-size:13px;font-weight:600;line-height:1.4;margin-bottom:8px;}
+  .member{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid #F3F4F6;}
+  .member:last-child{border-bottom:none;}
+  .member-name{font-size:15px;font-weight:700;}
+  .member-role{font-size:12px;color:var(--muted);margin-top:1px;}
+  .doc-line{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:8px;}
+  .doc-line .check-box{width:18px;height:18px;font-size:10px;margin-top:0;}
+  .doc-banner.warn{background:#FEF3C7;border-color:var(--amber);color:#92400E;}
+  .doc-action{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:8px 12px;border:1.5px solid var(--amber);color:#92400E;background:#FEF3C7;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;}
+  .doc-action:hover{background:#FDE68A;}
+
+  /* ===== design pass (palette unchanged) ===== */
+  .card{padding:20px;border:1px solid rgba(17,24,39,.05);border-radius:16px;box-shadow:0 1px 2px rgba(17,24,39,.04),0 6px 18px rgba(17,24,39,.05);}
+  .panel{border:1px solid rgba(17,24,39,.05);border-radius:18px;box-shadow:0 1px 2px rgba(17,24,39,.04),0 12px 30px rgba(17,24,39,.07);}
+  .card-title{letter-spacing:.6px;font-size:12px;}
+  .grid2{gap:20px;} .grid-side{gap:28px;}
+  .grid2>.card{margin-bottom:0;}
+  .grid2 .card.wide{grid-column:1/-1;}
+  /* unified radii */
+  .btn,.input,.variant{border-radius:14px;}
+  .ticket{border-radius:16px;}
+  /* aligned numerals */
+  .ticket-price,.variant-price,.pay-price,.stat-value,.budget-amount,.next-price,.slider-value,.card-num,.ticket-time{font-variant-numeric:tabular-nums;}
+  /* category icon → tinted badge */
+  .category-head{gap:10px;margin-bottom:12px;}
+  .category-icon{width:34px;height:34px;border-radius:10px;background:var(--halyk-light);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  /* input focus glow */
+  .input:focus-within{border-color:var(--halyk);box-shadow:0 0 0 3px var(--halyk-light);}
+  /* interactive depth + press */
+  .ticket,.variant,.share-btn,.qa,.next-trip{transition:transform .14s ease,box-shadow .14s ease,border-color .12s ease;}
+  .ticket:hover,.variant:hover,.share-btn:hover,.qa:hover,.next-trip:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(17,24,39,.09);}
+  .btn{transition:transform .08s ease,background .12s ease,box-shadow .12s ease;}
+  .btn:active{transform:translateY(1px) scale(.995);}
+  /* accessible focus ring */
+  a:focus-visible,.btn:focus-visible,.chip:focus-visible,.tab:focus-visible,.back-btn:focus-visible,.ghost:focus-visible,input:focus-visible,.ticket:focus-visible,.variant:focus-visible{outline:2px solid var(--halyk);outline-offset:2px;}
+
+  /* s3: К оплате — растянуть панель на высоту левой колонки */
+  #s3 .grid-side{align-items:stretch;}
+  #s3 .main{display:flex;flex-direction:column;}
+  #s3 .main .card:last-child{flex:1;margin-bottom:0;}
+  #s3 .side{display:flex;}
+  #s3 .panel{display:flex;flex-direction:column;flex:1;}
+  #s3 .panel .panel-note{margin-top:auto;}
+  #s3 .toggle-row{border:1px solid var(--border);}
+  .pay-method{margin:18px 0 6px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+  .toggle-row.disabled{opacity:.55;pointer-events:none;}
+  /* s4: варианты выбора — равномерно на всю ширину ячейки */
+  #s4 .variant{flex:1;min-width:0;}
+
+  @media(max-width:820px){
+    .grid2,.grid-side{grid-template-columns:1fr;}
+    .side{position:static;}
+    .next-trips{grid-template-columns:1fr;}
+    .stage{padding:22px 16px 60px;}
+    .topbar{padding:0 16px;gap:10px;}
+    .step-dots{display:none;}
+    .page-title{font-size:21px;}
+  }
+
+
+/* ══ V2 STYLES — chat + plan (namespaced) ══ */
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+:root{
+  --g:#00B14F;--gd:#008F3F;--gl:#E8F7EE;--gx:#F2FBF5;
+  --bg:#F0F2F5;--w:#fff;--text:#111827;--t2:#4B5563;--t3:#9CA3AF;
+  --border:#E5E8ED;--amber:#F59E0B;--red:#EF4444;
+  --r:16px;--r-sm:12px;--r-xs:8px;
+}
+html,body{height:100%;}
+#v2wrap{font-family:'Golos Text',sans-serif;color:var(--text);}
+.app{display:grid;grid-template-columns:1fr 344px;height:100vh;overflow:hidden;}
+
+/* ── CHAT COL ── */
+.chat-col{display:flex;flex-direction:column;height:100vh;}
+
+/* Topbar */
+.ctop{background:var(--w);border-bottom:1px solid var(--border);padding:13px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.c-ava{width:38px;height:38px;border-radius:50%;background:var(--g);color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.c-info{flex:1;}
+.c-name{font-size:15px;font-weight:700;}
+.c-sub{font-size:11px;color:var(--t3);}
+.c-status{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--g);}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--g);animation:pulse 1.6s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* Time divider */
+.time-div{display:flex;align-items:center;gap:10px;padding:6px 0;flex-shrink:0;}
+.time-div span{font-size:11px;font-weight:700;color:var(--t3);white-space:nowrap;text-transform:uppercase;letter-spacing:.5px;}
+.time-div::before,.time-div::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* Messages */
+.msgs{flex:1;overflow-y:auto;padding:16px 16px 8px;display:flex;flex-direction:column;gap:10px;}
+.msgs::-webkit-scrollbar{width:3px;}
+.msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+.mrow{display:flex;gap:8px;align-items:flex-end;animation:up .2s ease;}
+.mrow.u{flex-direction:row-reverse;}
+@keyframes up{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:none;}}
+.mava{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+.mava.ai{background:var(--g);color:#fff;font-size:15px;}
+.mava.u{background:#DBEAFE;color:#1D4ED8;}
+.bub{max-width:76%;padding:11px 14px;border-radius:var(--r);font-size:13.5px;line-height:1.58;}
+.bub.ai{background:var(--w);border:1px solid var(--border);border-bottom-left-radius:4px;}
+.bub.u{background:var(--g);color:#fff;border-bottom-right-radius:4px;}
+.bub.typ{padding:12px 15px;}
+.dots{display:flex;gap:4px;}
+.dots span{width:6px;height:6px;border-radius:50%;background:var(--t3);animation:dot .85s ease-in-out infinite;}
+.dots span:nth-child(2){animation-delay:.14s;}
+.dots span:nth-child(3){animation-delay:.28s;}
+@keyframes dot{0%,80%,100%{transform:scale(.6);opacity:.4;}40%{transform:scale(1);opacity:1;}}
+
+/* Concern card — ключевой элемент */
+.concern{background:linear-gradient(135deg,var(--gx) 0%,var(--w) 100%);border:1px solid rgba(0,177,79,.18);border-radius:var(--r-sm);padding:13px 15px;max-width:76%;animation:up .2s ease;}
+.concern-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--g);margin-bottom:5px;}
+.concern-text{font-size:13px;font-weight:600;color:var(--text);line-height:1.5;}
+.concern-sub{font-size:12px;color:var(--t2);margin-top:3px;}
+
+/* System notice — тихие действия системы */
+.sys-notice{display:flex;align-items:center;gap:8px;background:#F8FAFC;border:1px solid var(--border);border-radius:var(--r-xs);padding:9px 12px;max-width:76%;font-size:12px;color:var(--t2);animation:up .2s ease;}
+.sys-notice.warn{background:#FFFBEB;border-color:rgba(245,158,11,.3);color:#92400E;}
+.sys-notice.ok{background:var(--gx);border-color:rgba(0,177,79,.2);color:var(--gd);}
+
+/* Chips */
+#v2wrap .chips-wrap{flex-shrink:0;padding:4px 16px 8px;}
+#v2wrap .chips-ctx{font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;display:flex;align-items:center;gap:7px;}
+.ctx-badge{background:var(--gl);color:var(--gd);font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;}
+#v2wrap .chips{display:flex;flex-wrap:wrap;gap:7px;}
+#v2wrap .chip{padding:9px 13px;background:var(--w);border:1.5px solid var(--border);border-radius:var(--r-sm);cursor:pointer;transition:all .12s;user-select:none;}
+#v2wrap .chip:hover{border-color:var(--g);background:var(--gx);}
+#v2wrap .chip.picked{border-color:var(--g);background:var(--gl);}
+.chip-l{font-size:13px;font-weight:600;}
+.chip-s{font-size:11px;color:var(--t3);margin-top:1px;}
+
+/* Input */
+.inp-area{flex-shrink:0;padding:9px 16px 13px;background:var(--w);border-top:1px solid var(--border);}
+.inp-row{display:flex;gap:8px;align-items:flex-end;}
+textarea.inp{flex:1;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 13px;font-size:13.5px;font-family:inherit;outline:none;resize:none;max-height:72px;transition:border-color .12s;}
+textarea.inp:focus{border-color:var(--g);}
+.sbtn{width:40px;height:40px;border-radius:10px;background:var(--g);border:none;color:#fff;cursor:pointer;font-size:17px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background .12s;}
+.sbtn:hover{background:var(--gd);}
+.sbtn:disabled{opacity:.33;cursor:not-allowed;}
+
+/* ── PLAN COL ── */
+.plan-col{background:var(--w);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+
+.plan-hdr{padding:16px 18px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.plan-ttl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);margin-bottom:11px;}
+
+/* Ticket */
+#v2wrap .ticket{border:none;background:var(--g);border-radius:var(--r-sm);padding:13px 15px;color:#fff;position:relative;overflow:hidden;}
+#v2wrap .ticket::after{content:'';position:absolute;right:-12px;top:-12px;width:65px;height:65px;background:rgba(255,255,255,.06);border-radius:50%;}
+.t-route{font-size:17px;font-weight:900;}
+.t-meta{font-size:11px;opacity:.7;margin-top:2px;}
+.t-foot{display:flex;justify-content:space-between;align-items:center;margin-top:9px;}
+.t-price{font-size:14px;font-weight:800;}
+.t-ok{background:rgba(255,255,255,.18);font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;}
+
+/* Phase indicator */
+.phase-bar{margin:12px 18px 0;display:flex;gap:4px;}
+.phase{flex:1;height:4px;border-radius:2px;background:var(--border);transition:background .4s;}
+.phase.active{background:var(--g);}
+.phase-labels{display:flex;justify-content:space-between;margin:5px 18px 0;font-size:10px;color:var(--t3);font-weight:600;}
+
+/* Plan items */
+.plan-items{flex:1;overflow-y:auto;padding:10px 14px;}
+.plan-items::-webkit-scrollbar{width:3px;}
+.plan-items::-webkit-scrollbar-thumb{background:var(--border);}
+.pi{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid #F3F4F6;animation:up .22s ease;}
+.pi:last-child{border-bottom:none;}
+.pi-ico{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.pi-ico.done{background:var(--gl);}
+.pi-ico.wait{background:#F3F4F6;}
+.pi-ico.locked{background:#F9FAFB;opacity:.5;}
+.pi-body{flex:1;}
+.pi-svc{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.3px;}
+.pi-val{font-size:12.5px;font-weight:700;margin-top:1px;}
+.pi-val.done{color:var(--text);}
+.pi-val.wait{color:var(--t3);font-weight:400;font-style:italic;}
+.pi-val.locked{color:var(--border);font-style:italic;font-weight:400;}
+.pi-tag{font-size:10px;font-weight:700;padding:2px 6px;border-radius:100px;margin-top:4px;display:inline-block;}
+.pi-tag.g{background:var(--gl);color:var(--gd);}
+.pi-tag.a{background:#FEF3C7;color:#92400E;}
+.pi-when{font-size:10px;color:var(--t3);margin-top:2px;}
+
+/* Budget */
+.budget{margin:0 14px 12px;background:var(--bg);border-radius:var(--r-sm);padding:13px;}
+.b-hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px;}
+.b-lbl{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--t3);letter-spacing:.4px;}
+.b-total{font-size:19px;font-weight:900;}
+.brow{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;}
+.brow-n{color:var(--t2);}
+.brow-v{font-weight:700;}
+.brow-v.g{color:var(--g);}
+.brow-v.gr{color:var(--t3);}
+.btr{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:7px;}
+.btr-f{height:100%;background:var(--g);border-radius:2px;transition:width .5s ease;}
+
+/* Footer */
+.plan-ftr{padding:10px 14px 14px;border-top:1px solid var(--border);flex-shrink:0;}
+.btn-ok{width:100%;padding:12px;background:var(--g);color:#fff;border:none;border-radius:var(--r-sm);font-size:13.5px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .12s;margin-bottom:7px;}
+.btn-ok:hover{background:var(--gd);}
+.btn-ok:disabled{opacity:.32;cursor:not-allowed;}
+.btn-sh{width:100%;padding:11px;background:var(--w);border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:13.5px;font-weight:700;font-family:inherit;cursor:pointer;}
+.plan-hint{font-size:11px;color:var(--t3);text-align:center;margin-top:9px;line-height:1.5;}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);background:#111;color:#fff;padding:10px 18px;border-radius:100px;font-size:13px;font-weight:600;z-index:999;transition:transform .28s ease;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+</style>
+</head>
+<body>
+
+<!-- ════ V1: WIZARD (steps 1–3) ════ -->
+<div id="v1wrap">
+<div class="topbar">
+  <div class="brand"><div class="logo">H</div><b>Halyk</b><small>Smart Travel</small></div>
+  <div class="stepper">
+    <span class="step-text" id="stepText">Шаг 1 из 10</span>
+    <div class="step-dots" id="stepDots"></div>
+    <button class="ghost" id="restart">↻ Сбросить</button>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="container">
+    <div class="page-head">
+      <button class="back-btn hidden" id="backBtn">‹</button>
+      <div><div class="page-title" id="pageTitle"></div><div class="page-sub" id="pageSub"></div></div>
+    </div>
+    <div id="screens"></div>
+  </div>
+</div>
+
+<div class="loading" id="loading"><div class="spinner"></div><div class="loading-text" id="loadingText">AI собирает план…</div></div>
+<div class="toast" id="toast"></div>
+
+<div class="modal" id="familyModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div><div class="modal-title">Семья · 4 человека</div><div class="modal-sub">Алматы → Астана · 29–31 мая</div></div>
+      <button class="modal-close" id="familyClose">✕</button>
+    </div>
+    <div class="doc-banner warn"><span style="font-size:18px">⚠️</span><div>Документы проверены · у Айши свидетельство истекает через 30 дней</div></div>
+    <div class="member"><div class="avatar">А</div><div style="flex:1">
+      <div class="member-name">Айдар Абдрахманов</div><div class="member-role">Взрослый · основной путешественник</div>
+      <div class="doc-line"><div class="check-box on">✓</div><span>Удостоверение личности · действительно до 03.2030</span></div></div></div>
+    <div class="member"><div class="avatar">Ал</div><div style="flex:1">
+      <div class="member-name">Алия Абдрахманова</div><div class="member-role">Взрослый</div>
+      <div class="doc-line"><div class="check-box on">✓</div><span>Удостоверение личности · действительно до 07.2031</span></div></div></div>
+    <div class="member"><div class="avatar k">9</div><div style="flex:1">
+      <div class="member-name">Айша Абдрахманова</div><div class="member-role">Ребёнок · 9 лет</div>
+      <div class="doc-line"><div class="check-box warn">!</div><span>Свидетельство о рождении · срок истекает через 30 дней</span></div>
+      <div class="doc-action" data-gov>🏛️ Обновить в Госуслугах →</div></div></div>
+    <div class="member"><div class="avatar k">5</div><div style="flex:1">
+      <div class="member-name">Алишер Абдрахманов</div><div class="member-role">Ребёнок · 5 лет</div>
+      <div class="doc-line"><div class="check-box on">✓</div><span>Свидетельство о рождении · действительно</span></div></div></div>
+  </div>
+</div>
+
+</div>
+
+<!-- ════ V2: CHAT + PLAN ════ -->
+<div id="v2wrap" style="display:none;opacity:0">
+<div class="app">
+
+<!-- ════ CHAT ════ -->
+<div class="chat-col">
+  <div class="ctop">
+    <div class="c-ava">✦</div>
+    <div class="c-info">
+      <div class="c-name">Halyk Travel AI</div>
+      <div class="c-sub">Персональный ассистент поездки</div>
+    </div>
+    <div class="c-status">
+      <div class="sdot" id="sdot"></div>
+      <span id="stext">Онлайн</span>
+    </div>
+  </div>
+
+  <div class="msgs" id="msgs"></div>
+  <div class="chips-wrap" id="chips"></div>
+  <div class="inp-area">
+    <div class="inp-row">
+      <textarea class="inp" id="inp" placeholder="Напишите свой ответ…" rows="1"
+        onkeydown="hkey(event)" oninput="oinp()"></textarea>
+      <button class="sbtn" id="sbtn" onclick="send()" disabled>↑</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ PLAN ════ -->
+<div class="plan-col">
+  <div class="plan-hdr">
+    <div class="plan-ttl">Ваш план · черновик</div>
+    <div class="ticket">
+      <div class="t-route">АЛА → АСТ</div>
+      <div class="t-meta" id="tk-meta">🚆 Поезд · 29–31 мая · 4 чел.</div>
+      <div class="t-foot">
+        <span class="t-price" id="tk-price">38 000 ₸</span>
+        <span class="t-ok">✓ Оплачено</span>
+      </div>
+    </div>
+    <div class="phase-bar">
+      <div class="phase active" id="ph0"></div>
+      <div class="phase" id="ph1"></div>
+      <div class="phase" id="ph2"></div>
+    </div>
+    <div class="phase-labels">
+      <span>Сейчас</span><span>За 3 дня</span><span>В пути</span>
+    </div>
+  </div>
+
+  <div class="plan-items" id="planItems">
+    <!-- Фаза 1 -->
+    <div class="pi" id="pi-hotel">
+      <div class="pi-ico wait" id="ico-hotel">🏨</div>
+      <div class="pi-body">
+        <div class="pi-svc">Жильё · Booking</div>
+        <div class="pi-val wait" id="pv-hotel">ожидаем…</div>
+      </div>
+    </div>
+    <div class="pi" id="pi-docs">
+      <div class="pi-ico wait" id="ico-docs">📋</div>
+      <div class="pi-body">
+        <div class="pi-svc">Документы · 66 госуслуг</div>
+        <div class="pi-val wait" id="pv-docs">проверяем…</div>
+      </div>
+    </div>
+    <div class="pi" id="pi-insur">
+      <div class="pi-ico wait" id="ico-insur">🛡️</div>
+      <div class="pi-body">
+        <div class="pi-svc">Страховка · СК Халык</div>
+        <div class="pi-val wait" id="pv-insur">ожидаем…</div>
+      </div>
+    </div>
+    <div class="pi" id="pi-budget">
+      <div class="pi-ico wait" id="ico-budget">💰</div>
+      <div class="pi-body">
+        <div class="pi-svc">Бюджет поездки</div>
+        <div class="pi-val wait" id="pv-budget">считаем…</div>
+      </div>
+    </div>
+    <!-- Фаза 2 -->
+    <div class="pi" id="pi-pharma">
+      <div class="pi-ico locked" id="ico-pharma">💊</div>
+      <div class="pi-body">
+        <div class="pi-svc">Аптечка · Appteka</div>
+        <div class="pi-val locked" id="pv-pharma">за 7 дней до поездки</div>
+        <div class="pi-when" id="pw-pharma"></div>
+      </div>
+    </div>
+    <div class="pi" id="pi-transfer">
+      <div class="pi-ico locked" id="ico-transfer">🚖</div>
+      <div class="pi-body">
+        <div class="pi-svc">Трансфер · inDrive</div>
+        <div class="pi-val locked" id="pv-transfer">за 3 дня до поездки</div>
+      </div>
+    </div>
+    <div class="pi" id="pi-kino">
+      <div class="pi-ico locked" id="ico-kino">🎬</div>
+      <div class="pi-body">
+        <div class="pi-svc">Развлечения · Kino.kz</div>
+        <div class="pi-val locked" id="pv-kino">за 3 дня до поездки</div>
+      </div>
+    </div>
+    <div class="pi" id="pi-resto">
+      <div class="pi-ico locked" id="ico-resto">🍽️</div>
+      <div class="pi-body">
+        <div class="pi-svc">Рестораны · Halyk</div>
+        <div class="pi-val locked" id="pv-resto">за 3 дня до поездки</div>
+      </div>
+    </div>
+    <!-- Фаза 3 -->
+    <div class="pi" id="pi-airba">
+      <div class="pi-ico locked" id="ico-airba">🛒</div>
+      <div class="pi-body">
+        <div class="pi-svc">Продукты · Airba Fresh</div>
+        <div class="pi-val locked" id="pv-airba">в поезде за 40 мин до Астаны</div>
+      </div>
+    </div>
+    <div class="pi" id="pi-taxi">
+      <div class="pi-ico locked" id="ico-taxi">🚖</div>
+      <div class="pi-body">
+        <div class="pi-svc">Такси с вокзала</div>
+        <div class="pi-val locked" id="pv-taxi">при прибытии</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="budget" id="budgetBlock">
+    <div class="b-hdr">
+      <div class="b-lbl">Бюджет поездки</div>
+      <div class="b-total" id="btotal">38 000 ₸</div>
+    </div>
+    <div class="brow"><span class="brow-n">✓ Факт</span><span class="brow-v g" id="bfact">38 000 ₸</span></div>
+    <div class="brow"><span class="brow-n">Расчётное</span><span class="brow-v gr">78 000 ₸</span></div>
+    <div class="btr"><div class="btr-f" id="bbar" style="width:33%"></div></div>
+  </div>
+
+  <div class="plan-ftr">
+    <button class="btn-ok" id="okBtn" disabled onclick="approve()">Утвердить план →</button>
+    <button class="btn-sh" onclick="share()">Поделиться с семьёй</button>
+    <div class="plan-hint">✦ AI напомнит про каждый шаг в нужный момент</div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- Shared toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ══════════════════════════
+   V1 JS — WIZARD STEPS 1–3
+══════════════════════════ */
+
+/* ---------- Data ---------- */
+const PRICES = {
+  hotel:48000, restaurant:25000,
+  transfer:{eco:2500,comfort:4000,business:7000},
+  ent:{ocean:8000,expo:6000,theatre:12000},
+  ins:{basic:1500,family:3000,premium:5000},
+};
+const TICKETS = {
+  zhd:[
+    {id:'kupe',carrier:'Тальго · купе',type:'Halyk Travel · туда-обратно',tag:'Удобно',price:38000,
+      there:{d:'09:00',a:'15:30',from:'Алматы',to:'Астана',date:'29.05',dur:'6 ч 30 м'},
+      back:{d:'18:00',a:'00:30',from:'Астана',to:'Алматы',date:'31.05',dur:'6 ч 30 м'}},
+    {id:'platz',carrier:'Поезд · плацкарт',type:'Halyk Travel · ночной',tag:'Дёшево',tagColor:'#92400E',tagBg:'#FEF3C7',price:18000,
+      there:{d:'22:10',a:'06:40',from:'Алматы',to:'Астана',date:'29→30.05',dur:'8 ч 30 м'},
+      back:{d:'21:00',a:'05:30',from:'Астана',to:'Алматы',date:'31→01.06',dur:'8 ч 30 м'}},
+    {id:'sv',carrier:'Поезд · СВ (люкс)',type:'Halyk Travel · туда-обратно',tag:'Премиум',tagColor:'#6D28D9',tagBg:'#EDE9FE',price:64000,
+      there:{d:'21:00',a:'05:30',from:'Алматы',to:'Астана',date:'29→30.05',dur:'8 ч 30 м'},
+      back:{d:'21:00',a:'05:30',from:'Астана',to:'Алматы',date:'31→01.06',dur:'8 ч 30 м'}},
+  ],
+  avia:[
+    {id:'airastana',carrier:'Air Astana',type:'Halyk Travel · KC 853',tag:'Быстро',tagColor:'#1D4ED8',tagBg:'#DBEAFE',price:65000,
+      there:{d:'08:00',a:'09:40',from:'Алматы',to:'Астана',date:'29.05',dur:'1 ч 40 м'},
+      back:{d:'20:00',a:'21:40',from:'Астана',to:'Алматы',date:'31.05',dur:'1 ч 40 м'}},
+    {id:'flyarystan',carrier:'FlyArystan',type:'Halyk Travel · KC 121',tag:'',price:52000,
+      there:{d:'14:00',a:'15:45',from:'Алматы',to:'Астана',date:'29.05',dur:'1 ч 45 м'},
+      back:{d:'16:00',a:'17:45',from:'Астана',to:'Алматы',date:'31.05',dur:'1 ч 45 м'}},
+  ],
+  bus:[
+    {id:'bus',carrier:'Автобус · Lux',type:'Halyk Travel · туда-обратно',tag:'Дёшево',tagColor:'#92400E',tagBg:'#FEF3C7',price:12000,
+      there:{d:'21:00',a:'09:00',from:'Алматы',to:'Астана',date:'29→30.05',dur:'12 ч'},
+      back:{d:'21:00',a:'09:00',from:'Астана',to:'Алматы',date:'31→01.06',dur:'12 ч'}},
+  ],
+};
+const META={
+  1:['Куда поедете?','Найдём билеты и соберём всю поездку'],
+  2:['Билеты Алматы → Астана','29–31 мая · туда-обратно · 4 пассажира'],
+  3:['Ваш билет','Halyk Travel · оплата картой Halyk'],
+  4:['Расскажите о поездке','Билет куплен — AI подберёт остальное'],
+  5:['Ещё пару вопросов','AI учтёт ответы в плане поездки'],
+  6:['Поделиться планом','Получатель увидит весь маршрут'],
+  7:['Что и где оплатить','Платите везде картой Halyk'],
+  8:['Подготовка','4 дня до поездки · AI собрал чеклист'],
+  9:['В поездке · Астана','День 1 из 3'],
+  10:['Поездка завершена','Астана · 29–31 мая · 2 ночи'],
+};
+
+const DEFAULT_STATE=()=>({transport:'zhd',ticketId:'kupe',bought:false,budget:280000,goal:'leisure',
+  transfer:'comfort',ent:['ocean','expo'],ins:'family',address:'Holiday Inn · пр. Кабанбай батыра',cvc:false,screen:1});
+let S=DEFAULT_STATE();
+let history=[];
+
+const ticketById=id=>{for(const k in TICKETS){const t=TICKETS[k].find(x=>x.id===id);if(t)return t;}return TICKETS.zhd[0];};
+const ticketPrice=()=>ticketById(S.ticketId).price;
+const planTotal=()=>ticketPrice()+PRICES.hotel+PRICES.restaurant+PRICES.transfer[S.transfer]
+  +S.ent.reduce((s,k)=>s+PRICES.ent[k],0)+PRICES.ins[S.ins];
+const fmt=n=>n.toLocaleString('ru-RU').replace(/ /g,' ').replace(/,/g,' ')+' ₸';
+
+/* ---------- Navigation ---------- */
+function go(n,isBack){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const cur=document.getElementById('s'+n); if(!cur)return;
+  cur.classList.add('active');
+  S.screen=n;
+  const m=META[n]||['',''];
+  document.getElementById('pageTitle').textContent=m[0];
+  document.getElementById('pageSub').textContent=m[1];
+  document.getElementById('backBtn').classList.toggle('hidden',history.length===0);
+  document.getElementById('stepText').textContent='Шаг '+n+' из 3';
+  document.querySelectorAll('#stepDots .dot').forEach((d,i)=>d.classList.toggle('active',i===n-1));
+  renderDynamic(n);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function navTo(n){history.push(S.screen||1);go(n);}
+function back(){const p=history.pop();go(p||1,true);}
+
+/* ---------- Toast / loading ---------- */
+let toastT;
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),1900);}
+function copy(text){if(navigator.clipboard)navigator.clipboard.writeText(text).catch(()=>{});toast('Скопировано: '+text);}
+function withLoading(text,then){const l=document.getElementById('loading');document.getElementById('loadingText').textContent=text;l.classList.add('show');setTimeout(()=>{l.classList.remove('show');then();},1400);}
+function openFamily(){document.getElementById('familyModal').classList.add('show');}
+function closeFamily(){document.getElementById('familyModal').classList.remove('show');}
+
+/* ---------- Builders ---------- */
+function ticketCard(t,selected){
+  const tag=t.tag?`<span class="ticket-tag" style="${t.tagBg?`background:${t.tagBg};color:${t.tagColor}`:''}">${t.tag}</span>`:'';
+  const icon=S.transport==='avia'?'✈️':S.transport==='bus'?'🚌':'🚄';
+  return `<div class="ticket ${selected?'selected':''}" data-ticket="${t.id}">
+    <div class="ticket-top"><span style="font-size:22px">${icon}</span>
+      <div style="flex:1"><div class="ticket-carrier">${t.carrier}</div><div class="ticket-type">${t.type}</div></div>${tag}</div>
+    <div class="ticket-route">
+      <div><div class="ticket-time">${t.there.d}</div><div class="ticket-city">${t.there.from} · ${t.there.date}</div></div>
+      <div class="ticket-mid"><div class="ticket-dur">${t.there.dur}</div><div class="ticket-arrow"></div></div>
+      <div style="text-align:right"><div class="ticket-time">${t.there.a}</div><div class="ticket-city">${t.there.to} · ${t.there.date}</div></div></div>
+    <div class="ticket-foot"><span class="ticket-price">${fmt(t.price)}</span><span style="font-size:12px;color:var(--muted)">за 4 · туда-обратно</span></div></div>`;
+}
+const variant=(cat,id,tag,name,price,sel)=>`<div class="variant ${sel?'selected':''}" data-cat="${cat}" data-id="${id}"><div class="variant-tag">${tag}</div><div class="variant-name">${name}</div><div class="variant-price">${fmt(price)}</div></div>`;
+
+function renderDynamic(n){if(n===2)renderTickets();if(n===3)renderTicketDetail();}
+function renderTickets(){
+  document.getElementById('ticketList').innerHTML=TICKETS[S.transport].map(t=>ticketCard(t,t.id===S.ticketId)).join('');
+  document.querySelectorAll('#s2 .tab').forEach(tb=>tb.classList.toggle('active',tb.dataset.transport===S.transport));
+}
+function renderTicketDetail(){
+  const t=ticketById(S.ticketId);
+  const icon=S.transport==='avia'?'✈️ ':S.transport==='bus'?'🚌 ':'🚄 ';
+  document.getElementById('tdHead').textContent=icon+t.carrier;
+  document.getElementById('tdLegs').innerHTML=
+    `<div class="leg-tag">Туда · ${t.there.date}</div><div class="ticket-route"><div><div class="ticket-time">${t.there.d}</div><div class="ticket-city">${t.there.from}</div></div><div class="ticket-mid"><div class="ticket-dur">${t.there.dur}</div><div class="ticket-arrow"></div></div><div style="text-align:right"><div class="ticket-time">${t.there.a}</div><div class="ticket-city">${t.there.to}</div></div></div>
+     <div class="leg-tag" style="margin-top:14px">Обратно · ${t.back.date}</div><div class="ticket-route"><div><div class="ticket-time">${t.back.d}</div><div class="ticket-city">${t.back.from}</div></div><div class="ticket-mid"><div class="ticket-dur">${t.back.dur}</div><div class="ticket-arrow"></div></div><div style="text-align:right"><div class="ticket-time">${t.back.a}</div><div class="ticket-city">${t.back.to}</div></div></div>`;
+  document.getElementById('tdPriceRow').textContent=fmt(t.price);
+  document.getElementById('tdTotal').textContent=fmt(t.price);
+  document.getElementById('buyBtn').textContent='Купить билет · '+fmt(t.price);
+}
+function renderPlanVariants(){
+  document.getElementById('vTransfer').innerHTML=variant('transfer','eco','Эконом','Туда-обратно',PRICES.transfer.eco,S.transfer==='eco')+variant('transfer','comfort','Рекомендую','Комфорт',PRICES.transfer.comfort,S.transfer==='comfort')+variant('transfer','business','Бизнес','Премиум-класс',PRICES.transfer.business,S.transfer==='business');
+  document.getElementById('vEnt').innerHTML=variant('ent','ocean','Kino.kz','Океанариум',PRICES.ent.ocean,S.ent.includes('ocean'))+variant('ent','expo','Kino.kz','Экспо',PRICES.ent.expo,S.ent.includes('expo'))+variant('ent','theatre','Kino.kz','Театр',PRICES.ent.theatre,S.ent.includes('theatre'));
+  document.getElementById('vIns').innerHTML=variant('ins','basic','Базовая','Только мед.',PRICES.ins.basic,S.ins==='basic')+variant('ins','family','Рекомендую','Семейная',PRICES.ins.family,S.ins==='family')+variant('ins','premium','Премиум','Расширенная',PRICES.ins.premium,S.ins==='premium');
+  document.getElementById('ticketBought').textContent='🎫 Билеты куплены — '+fmt(ticketPrice());
+  document.getElementById('addrVal').value=S.address;
+  document.getElementById('transferAddr').textContent=S.address;
+}
+function renderBudget(){
+  const total=planTotal(),bar=document.getElementById('budgetBar'),ratio=total/S.budget;
+  bar.className='budget-bar '+(ratio<=1.05?'':ratio<=1.15?'amber':'red');
+  document.getElementById('budgetVal').textContent=fmt(total);
+  document.getElementById('budgetMax').textContent='из '+fmt(S.budget);
+  document.getElementById('budgetFill').style.width=Math.min(100,Math.round(ratio*100))+'%';
+}
+function renderPay(){
+  const t=ticketById(S.ticketId);
+  const rows=[
+    {icon:'🎫',name:'Билеты · '+t.carrier,where:'→ Halyk Travel',price:t.price,bought:true},
+    {icon:'🏨',name:'Жильё · '+S.address.split('·')[0].trim(),where:'→ Booking.com',price:PRICES.hotel},
+    {icon:'🚖',name:'inDrive ('+(S.transfer==='comfort'?'комфорт':'эконом')+')',where:'→ inDrive app',price:PRICES.transfer[S.transfer]},
+    {icon:'🛡️',name:'Страховка',where:'→ Halyk Страхование',price:PRICES.ins[S.ins]},
+  ];
+  const emap={ocean:['🐠','Океанариум Думан'],expo:['🎟️','Экспо · детские'],theatre:['🎭','Театр']};
+  S.ent.forEach(k=>rows.push({icon:emap[k][0],name:emap[k][1],where:'→ Kino.kz',price:PRICES.ent[k]}));
+  rows.push({icon:'🍽️',name:'Ресторан · бронь',where:'→ оплата на месте',price:PRICES.restaurant,approx:true});
+  document.getElementById('payList').innerHTML=rows.map(r=>`<div class="pay-item ${r.bought?'paid':''}"><div class="pay-icon">${r.icon}</div><div class="pay-content"><div class="pay-name">${r.name}</div><div class="pay-where">${r.where}</div></div><div style="text-align:right"><div class="pay-price">${r.approx?'~':''}${fmt(r.price)}</div>${r.bought?'<span class="bought-badge" style="font-size:9px">✓ куплено</span>':''}</div></div>`).join('');
+  document.getElementById('payRemaining').textContent=fmt(planTotal()-t.price);
+  document.getElementById('payReserve').textContent='+'+fmt(S.budget-planTotal())+' на еду и прочее';
+}
+
+/* ---------- Screen content (no per-screen header) ---------- */
+const SCREENS={
+s1:`<div class="form-narrow">
+  <div class="wizard-grid">
+    <div class="input"><div class="input-icon">📍</div><div class="input-content"><div class="input-label">Откуда</div><div class="input-value">Алматы</div></div></div>
+    <div class="input"><div class="input-icon">🏙️</div><div class="input-content"><div class="input-label">Куда</div><div class="input-value">Астана</div></div></div>
+    <div class="input"><div class="input-icon">📅</div><div class="input-content"><div class="input-label">Туда</div><div class="input-value">29 мая, пт</div></div></div>
+    <div class="input"><div class="input-icon">📅</div><div class="input-content"><div class="input-label">Обратно</div><div class="input-value">31 мая, вс</div></div></div>
+    <div class="input full" data-family><div class="input-icon">👨‍👩‍👧‍👦</div><div class="input-content"><div class="input-label">Кто едет</div><div class="input-value">Семья · 4 человека</div>
+      <div class="family"><div class="avatar">А</div><div class="avatar">Ал</div><div class="avatar k">9</div><div class="avatar k">5</div></div></div><div class="input-chevron">›</div></div>
+  </div>
+  <div class="btn" data-go="2">Найти билеты →</div>
+  <div style="text-align:center;font-size:12px;color:var(--muted);margin-top:16px;line-height:1.6">Сначала билет — затем AI соберёт отель, трансфер, страховку и развлечения вокруг него</div></div>`,
+
+s2:`<div class="narrow">
+  <div class="tabs"><div class="tab" data-transport="avia">✈️ Авиа</div><div class="tab" data-transport="zhd">🚄 ЖД</div><div class="tab" data-transport="bus">🚌 Автобус</div></div>
+  <div id="ticketList"></div>
+  <div class="btn" data-go="3">Выбрать билет →</div></div>`,
+
+s3:`<div class="grid-side">
+  <div class="main">
+    <div class="card"><div class="card-title" id="tdHead">🚄 Поезд купе</div><div id="tdLegs"></div></div>
+    <div class="card"><div class="card-title">Пассажиры · 4</div>
+      <div class="pax"><div class="avatar">А</div><div style="flex:1"><div style="font-size:14px;font-weight:600">Айдар Абдрахманов</div><div style="font-size:12px;color:var(--muted)">Взрослый · вагон 5, место 12</div></div></div>
+      <div class="pax"><div class="avatar">Ал</div><div style="flex:1"><div style="font-size:14px;font-weight:600">Алия Абдрахманова</div><div style="font-size:12px;color:var(--muted)">Взрослый · место 13</div></div></div>
+      <div class="pax"><div class="avatar k">9</div><div style="flex:1"><div style="font-size:14px;font-weight:600">Айша Абдрахманова</div><div style="font-size:12px;color:var(--muted)">Ребёнок 9 лет · место 14</div></div></div>
+      <div class="pax"><div class="avatar k">5</div><div style="flex:1"><div style="font-size:14px;font-weight:600">Алишер Абдрахманов</div><div style="font-size:12px;color:var(--muted)">Ребёнок 5 лет · место 15</div></div></div></div>
+  </div>
+  <aside class="side"><div class="panel">
+    <div class="panel-title">К оплате</div>
+    <div class="stat-row"><span class="stat-label">Билет × 4</span><span class="stat-value" id="tdPriceRow">38 000 ₸</span></div>
+    <div class="stat-row" style="border-top:1px solid var(--border)"><span class="stat-label">Сервисный сбор</span><span class="stat-value">0 ₸</span></div>
+    <div class="stat-row" style="border-top:1px solid var(--border)"><span class="stat-label" style="font-weight:700">Итого</span><span class="stat-value" id="tdTotal">38 000 ₸</span></div>
+    <div class="pay-method">Способ оплаты</div>
+    <div class="toggle-row disabled"><div><div style="font-size:14px;font-weight:600">Купить в рассрочку</div><div style="font-size:12px;color:var(--muted);margin-top:2px">До 12 месяцев</div></div><div class="toggle"></div></div>
+    <div class="toggle-row disabled"><div><div style="font-size:14px;font-weight:600">Купить в кредит</div><div style="font-size:12px;color:var(--muted);margin-top:2px">До 60 месяцев</div></div><div class="toggle"></div></div>
+    <div class="panel-note">🎫 Билеты придут в Halyk Wallet и добавятся в план.</div>
+    <div class="btn" id="buyBtn" data-buy>Купить билет · 38 000 ₸</div>
+  </div></aside></div>`
+};
+
+/* ---------- Init ---------- */
+function build(){
+  document.getElementById('stepDots').innerHTML=Array.from({length:3},(_,i)=>`<span class="dot ${i===0?'active':''}"></span>`).join('');
+  document.getElementById('screens').innerHTML=Object.keys(SCREENS).map(id=>`<section class="page" id="${id}">${SCREENS[id]}</section>`).join('');
+  bind(); go(1);
+}
+function bind(){
+  const root=document.getElementById('screens');
+  root.addEventListener('click',e=>{
+    const t=e.target;
+    if(t.closest('[data-family]')){openFamily();return;}
+    const goEl=t.closest('[data-go]'); if(goEl){navTo(parseInt(goEl.dataset.go));return;}
+    const tab=t.closest('.tab'); if(tab){S.transport=tab.dataset.transport; if(!TICKETS[S.transport].some(x=>x.id===S.ticketId))S.ticketId=TICKETS[S.transport][0].id; renderTickets();return;}
+    const tk=t.closest('[data-ticket]'); if(tk){S.ticketId=tk.dataset.ticket;renderTickets();return;}
+    if(t.closest('[data-buy]')){transferToV2();return;}
+    const chip=t.closest('.chip'); if(chip){const grp=chip.parentElement;
+      if(grp.hasAttribute('data-single')){grp.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));chip.classList.add('active');}
+      else chip.classList.toggle('active');
+      if(grp.dataset.group==='goal')S.goal=chip.dataset.val||S.goal; return;}
+    if(t.closest('[data-plan]')){withLoading('AI собирает план…',()=>navTo(5));return;}
+    const v=t.closest('.variant'); if(v){const cat=v.dataset.cat,id=v.dataset.id;
+      if(cat==='transfer')S.transfer=id; else if(cat==='ins')S.ins=id;
+      else if(cat==='ent'){const i=S.ent.indexOf(id); if(i>=0){if(S.ent.length>1)S.ent.splice(i,1);}else S.ent.push(id);}
+      renderPlanVariants();renderBudget();return;}
+    const sh=t.closest('[data-share]'); if(sh){toast('Открываем '+sh.dataset.share+'…');return;}
+    if(t.closest('[data-share-send]')){toast('Отправлено Алии ✓');setTimeout(()=>navTo(7),500);return;}
+    if(t.closest('#editToggle')){t.closest('#editToggle').classList.toggle('on');return;}
+    if(t.closest('#cvcBtn')){S.cvc=!S.cvc;document.getElementById('cvcVal').textContent=S.cvc?'114':'●●●';document.getElementById('cvcBtn').textContent=S.cvc?'Скрыть CVC':'Показать CVC';if(S.cvc)toast('CVC показан');return;}
+    const cp=t.closest('[data-copy]'); if(cp){copy(cp.dataset.copy);return;}
+    const ci=t.closest('.check-item'); if(ci&&ci.style.cursor!=='default'){const box=ci.querySelector('.check-box');if(!box.classList.contains('warn')){box.classList.toggle('on');box.textContent=box.classList.contains('on')?'✓':'';}return;}
+    const qa=t.closest('[data-qa]'); if(qa){toast(qa.dataset.qa+' · оплата картой Halyk');return;}
+    if(t.closest('[data-restart]')){restart();return;}
+  });
+  root.addEventListener('input',e=>{
+    if(e.target.id==='budgetSlider'){S.budget=parseInt(e.target.value);document.getElementById('budgetSliderVal').textContent=fmt(S.budget);renderBudget();}
+    if(e.target.id==='addrVal'){S.address=e.target.value;const ta=document.getElementById('transferAddr');if(ta)ta.textContent=e.target.value;}
+  });
+  document.getElementById('backBtn').addEventListener('click',back);
+  document.getElementById('restart').addEventListener('click',restart);
+  const fm=document.getElementById('familyModal');
+  fm.addEventListener('click',e=>{
+    if(e.target.closest('[data-gov]')){toast('Открываем Госуслуги · подача на обновление…');return;}
+    if(e.target===fm||e.target.closest('#familyClose'))closeFamily();
+  });
+}
+function restart(){
+  S=DEFAULT_STATE();history=[];go(1);toast('Начинаем сначала');
+}
+build();
+
+
+
+/* ══ TRANSFER v1 → v2 ══ */
+function transferToV2() {
+  const t = ticketById(S.ticketId);
+  const icon = S.transport==='avia'?'✈️':S.transport==='bus'?'🚌':'🚆';
+
+  // Update v2 ticket card in right column
+  const metaEl = document.getElementById('tk-meta');
+  const priceEl = document.getElementById('tk-price');
+  if (metaEl) metaEl.textContent = icon + ' ' + t.carrier + ' · 29–31 мая · 4 чел.';
+  if (priceEl) priceEl.textContent = fmt(t.price);
+
+  // Sync CTX and CS for v2
+  CTX.transport = S.transport==='avia'?'самолёт':S.transport==='bus'?'автобус':'поезд';
+  CTX.price = t.price;
+  CS.fact = t.price;
+
+  // Update v2 budget display
+  const bfact = document.getElementById('bfact');
+  const btotal = document.getElementById('btotal');
+  if (bfact) bfact.textContent = t.price.toLocaleString('ru') + ' ₸';
+  if (btotal) btotal.textContent = (t.price + 78000).toLocaleString('ru') + ' ₸';
+  const bbar = document.getElementById('bbar');
+  if (bbar) bbar.style.width = Math.round(t.price / (t.price + 78000) * 100) + '%';
+
+  // Toast then animate transition
+  toast('Билет куплен — собираем поездку ✓');
+  const v1el = document.getElementById('v1wrap');
+  const v2el = document.getElementById('v2wrap');
+  v1el.style.cssText = 'opacity:0;transition:opacity .4s ease;pointer-events:none';
+  setTimeout(() => {
+    v1el.style.display = 'none';
+    v2el.style.display = 'block';
+    v2el.style.opacity = '0';
+    v2el.style.transition = 'opacity .4s ease';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      v2el.style.opacity = '1';
+    }));
+    init();
+  }, 440);
+}
+
+
+/* ══════════════════════════
+   V2 JS — CHAT + PLAN
+══════════════════════════ */
+
+/* ══ КОНТЕКСТ ══ */
+const CTX = {
+  route:'Алматы → Астана', transport:'поезд',
+  dates:'29–31 мая', depart:'пятница', arrive:'15:30',
+  pax:4, kids:[5,9], hotelName:'Holiday Inn', isAppart:false,
+  weather:{fri:'☀️ +18°', sat:'🌧 +14° дождь', sun:'⛅ +20°'},
+  price:38000
+};
+
+/* ══ СОСТОЯНИЕ ══ */
+const CS = {
+  phase:0,      // 0=сейчас, 1=за3дня, 2=впути
+  step:0,       // шаг внутри текущей фазы
+  typing:false,
+  hist:[],
+  fact:38000,
+  done:0,
+  answers:{},
+  hotelDone:false, insurDone:false, docsDone:false
+};
+
+/* ══ ПЛАН ФАЗ — тревоги по хронологии ══ */
+const PHASES = [
+  // ФАЗА 0: сразу после билета
+  {
+    label:'Т−14 · Сразу после покупки',
+    steps:[
+      {
+        concern:'Надо отель — на майские разберут быстро',
+        aiPrompt:`Семья только что купила билеты. Их первая мысль — отель. Скажи 1 тёплое предложение что билеты готовы, и сразу спроси про жильё: упомяни что на майские разбирают быстро и что через Halyk Homebank +7% бонусов через Booking.com. Без markdown.`,
+        chips:[
+          {l:'🏨 Бронирую через Booking', s:'Halyk — +7% бонусов', v:'booking', plan:'hotel', label:'Booking.com (+7% бонусов) ✓', add:48000, badge:'g'},
+          {l:'🏠 Апартаменты', s:'krisha.kz / ввод адреса', v:'appart', plan:'hotel', label:'Апартаменты — Airba Fresh активирован', add:35000, badge:'g', isAppart:true},
+          {l:'✓ Уже забронировал', s:'адрес добавлю позже', v:'done', plan:'hotel', label:'Уже забронировано ✓', add:48000, badge:'g'},
+        ],
+        onDone:(v)=>{
+          CS.hotelDone=true;
+          if(v.isAppart) CTX.isAppart=true;
+          markDone('hotel',v.label,v.badge);
+          // Запускаем тихую проверку документов
+          setTimeout(()=>showDocCheck(),800);
+        }
+      },
+      {
+        // Документы — тихое системное действие, не вопрос
+        silent:true,
+        sysAction:()=>{
+          // Показываем системное уведомление
+          addSysNotice('warn','⚠️ Свидетельство о рождении Айши (9 лет) истекает 15 июня — до поездки 14 дней. Обновите через eGov.');
+          markPlan('docs','⚠️ Свидетельство Айши — до 15 июня','a');
+          CS.docsDone=true;
+        }
+      },
+      {
+        concern:'Страховка — надо наверное, пока не забыл',
+        aiPrompt:`Клиент только что выбрал жильё. Его следующая мысль — страховка (пока не забыл). Упомяни что данные семьи уже заполнены автоматически, это займёт 3 минуты, +20% бонусов через Halyk. Говори языком заботы, не продажи. 1-2 предложения. Без markdown.`,
+        chips:[
+          {l:'✓ Семейный полис', s:'медицина + багаж · 3 000 ₸', v:'family', plan:'insur', label:'Семейный полис · СК Халык ✓', add:3000, badge:'g'},
+          {l:'✓ Базовая', s:'медицина · 1 500 ₸', v:'base', plan:'insur', label:'Базовая медицинская ✓', add:1500, badge:'g'},
+          {l:'✕ Не сейчас', s:'пропустить', v:'skip', plan:'insur', label:'Без страховки', add:0, badge:'a'},
+        ],
+        onDone:(v)=>{
+          CS.insurDone=true;
+          markDone('insur',v.label,v.badge);
+          // После страховки — показываем смету
+          setTimeout(()=>showBudgetCalc(),600);
+        }
+      },
+      {
+        // Смета — системное, без вопроса
+        silent:true,
+        sysAction:()=>{
+          const total = CS.fact + 78000;
+          addSysNotice('ok',`✓ Посчитали бюджет поездки: факт ${CS.fact.toLocaleString('ru')} ₸ + расчётное 78 000 ₸ = ~${total.toLocaleString('ru')} ₸`);
+          markPlan('budget',`~${total.toLocaleString('ru')} ₸ · факт + расчётное`,'g');
+          // Показываем что дальше будет позже
+          setTimeout(()=>{
+            addSysNotice('ok','✓ Основное готово. За 7 дней напомним про аптечку, за 3 дня — трансфер и план на выходные.');
+            endPhase0();
+          },700);
+        }
+      },
+    ]
+  },
+
+  // ФАЗА 1: за 3 дня (симуляция push)
+  {
+    label:'Т−3 · Четверг вечером',
+    steps:[
+      {
+        // Вход в фазу — push с погодным контекстом
+        silent:true,
+        sysAction:()=>{
+          addTimeDivider('📲 Уведомление от Halyk Travel · Чт, 26 мая · 19:00');
+          addConcernCard(
+            'Послезавтра в Астану',
+            `В субботу ${CTX.weather.sat} — лучше выбрать крытые активности. Трансфер с вокзала ещё не выбран.`,
+            'Открываем подготовку к поездке'
+          );
+          setTimeout(()=>runNextStep(),900);
+        }
+      },
+      {
+        concern:'Как с вокзала доедем?',
+        aiPrompt:`За 3 дня до поездки. Семья думает о трансфере. Система уже знает адрес отеля. Скажи что маршрут готов: Вокзал Нурлы Жол → Holiday Inn, ~15 мин. В субботу дождь — рекомендуй такси с детьми. Говори языком заботы. 1-2 предложения.`,
+        chips:[
+          {l:'🚖 Такси — комфорт', s:'~3 500 ₸ · добавим в план', v:'taxi', plan:'transfer', label:'Такси · оплата картой Halyk', add:14000, badge:'g'},
+          {l:'🚌 Общественный', s:'самостоятельно', v:'public', plan:'transfer', label:'Общественный транспорт', add:0, badge:'a'},
+          {l:'🚗 Своя машина', s:'парковка у отеля', v:'own', plan:'transfer', label:'Своя машина', add:0, badge:'a'},
+        ],
+        onDone:(v)=>markDone('transfer',v.label,v.badge),
+      },
+      {
+        concern:'Что делать с детьми в субботу? Дождь…',
+        aiPrompt:`Суббота — дождь +14°. Дети 5 и 9 лет. Семья думает куда пойти. Упомяни что Думан — крытый аттракционный комплекс, отлично для детей в дождь, билеты через Kino.kz без комиссии. Говори языком тревоги клиента "что делать с детьми". 1-2 предложения.`,
+        chips:[
+          {l:'🎢 Думан — аттракционы', s:'крытый · в дождь идеально', v:'duman', plan:'kino', label:'Думан — аттракционы ✓', add:8000, badge:'g'},
+          {l:'🎬 Кино IMAX', s:'без комиссии · Kino.kz', v:'imax', plan:'kino', label:'Кино в IMAX ✓', add:6000, badge:'g'},
+          {l:'🏛️ ЭКСПО · Нур-Алем', s:'музей будущего · крытый', v:'expo', plan:'kino', label:'ЭКСПО · Нур-Алем ✓', add:6000, badge:'g'},
+          {l:'✕ Сами решим', s:'', v:'skip', plan:'kino', label:'Без мероприятий', add:0, badge:'a'},
+        ],
+        onDone:(v)=>markDone('kino',v.label,v.badge),
+      },
+      {
+        concern:'Где поужинаем в пятницу? После 6 часов в поезде готовить не хочется',
+        aiPrompt:`Пятница вечер — семья прибудет уставшей после 6.5 часов в поезде. Их мысль — где поужинать, не хочется искать. Предложи Halyk Рестораны: рестораны рядом с Holiday Inn с детским меню, можно забронировать столик сейчас. Говори языком этой усталости. 1-2 предложения.`,
+        chips:[
+          {l:'🍽️ Подберите рестораны рядом', s:'с детским меню · бронь столика', v:'pick', plan:'resto', label:'Рестораны Астаны · Halyk ✓', add:15000, badge:'g'},
+          {l:'🛵 Доставка в номер', s:'навынос из ресторана', v:'delivery', plan:'resto', label:'Доставка в номер ✓', add:12000, badge:'g'},
+          {l:'✕ Сами найдём', s:'', v:'skip', plan:'resto', label:'Без рекомендаций', add:0, badge:'a'},
+        ],
+        onDone:(v)=>markDone('resto',v.label,v.badge),
+      },
+      {
+        concern:'Дождь в субботу — что надеть детям?',
+        aiPrompt:`В субботу дождь +14°. Система знает возраст детей — 5 и 9 лет. Предложи купить зонты и детские дождевики через Halyk Market с доставкой до отеля. Говори языком заботы о детях в дождь, не языком рекламы. 1-2 предложения.`,
+        chips:[
+          {l:'🛍️ Зонты + куртки детям', s:'Halyk Market · доставка до отеля', v:'market', plan:null, label:null, add:3000, badge:'g',
+            onPick:()=>toast('🛍️ Halyk Market открыт — зонты и дождевики для детей')},
+          {l:'✕ Есть своё', s:'пропустить', v:'skip', plan:null, label:null, add:0},
+        ],
+        onDone:(v)=>{
+          setTimeout(()=>{
+            addSysNotice('ok','✓ Подготовка к поездке завершена. Аптечку рекомендуем заказать сейчас — обычная доставка дешевле чем экспресс в поездке.');
+            setTimeout(()=>showPharmaStep(),800);
+          },500);
+        }
+      },
+      {
+        concern:'Аптечку собрать надо — с детьми лучше заранее',
+        aiPrompt:`Семья с детьми 5 и 9 лет. Мысль — аптечка на поездку. Напомни что в поезде 6.5 часов, от укачивания важно взять. Appteka доставит готовый набор "Семья в дорогу" прямо домой. Говори языком родительской заботы. 1-2 предложения.`,
+        chips:[
+          {l:'💊 Детская аптечка', s:'жаропонижающее, пластыри, от укачивания', v:'kids', plan:'pharma', label:'Детская аптечка · Appteka ✓', add:4500, badge:'g'},
+          {l:'🤧 Есть аллергики', s:'Appteka подберёт', v:'allergy', plan:'pharma', label:'Антигистаминные · Appteka ✓', add:3000, badge:'g'},
+          {l:'✕ Готова', s:'пропустить', v:'skip', plan:'pharma', label:'Аптечка готова ✓', add:0, badge:'g'},
+        ],
+        onDone:(v)=>{
+          markDone('pharma',v.label,v.badge);
+          setTimeout(()=>endPhase1(),700);
+        }
+      },
+    ]
+  },
+
+  // ФАЗА 2: в поезде
+  {
+    label:'В пути · 29 мая · 14:50',
+    steps:[
+      {
+        silent:true,
+        sysAction:()=>{
+          addTimeDivider('📲 Уведомление · Пт 29 мая · 14:50 · В поезде');
+          addConcernCard(
+            'Через 40 минут — Астана',
+            CTX.isAppart
+              ? 'Хорошее время заказать продукты к приезду — Airba Fresh успеет доставить к 16:00'
+              : 'Отель уже ждёт. Сейчас хорошее время вызвать такси — маршрут готов.',
+            'Выберите действие'
+          );
+          setTimeout(()=>runNextStep(),900);
+        }
+      },
+      {
+        concern: CTX.isAppart ? 'Продукты к приезду — с детьми в магазин с чемоданами неудобно' : 'Такси до отеля',
+        aiPrompt: CTX.isAppart
+          ? `Семья едет в апартаменты. Через 40 минут Астана. Предложи заказать продукты через Airba Fresh — доставят к 16:00 пока они едут. С детьми ехать в магазин с чемоданами неудобно. Говори языком этого неудобства.`
+          : `Через 10 минут Астана. Маршрут уже готов: Вокзал Нурлы Жол → Holiday Inn. Один тап — и такси уже едет. Говори коротко, клиент стоит в проходе с чемоданами.`,
+        chips: CTX.isAppart ? [
+          {l:'🛒 Заказать через Airba Fresh', s:'доставка к 16:00', v:'airba', plan:'airba', label:'Продукты к приезду · Airba Fresh ✓', add:3000, badge:'g'},
+          {l:'✕ Сами купим', s:'', v:'skip', plan:'airba', label:'Продукты самостоятельно', add:0, badge:'a'},
+        ]:[
+          {l:'🚖 Вызвать такси', s:'Вокзал → Holiday Inn · ~3 500 ₸', v:'taxi', plan:'taxi', label:'Такси с вокзала ✓', add:0, badge:'g'},
+          {l:'✕ Сами', s:'', v:'skip', plan:'taxi', label:'Самостоятельно', add:0, badge:'a'},
+        ],
+        onDone:(v)=>{
+          markDone(CTX.isAppart?'airba':'taxi', v.label, v.badge);
+          setTimeout(()=>endPhase2(),700);
+        }
+      },
+    ]
+  },
+];
+
+/* ══ DOM ══ */
+const msgsEl=document.getElementById('msgs');
+const chipsEl=document.getElementById('chips');
+const inpEl=document.getElementById('inp');
+const sbtnEl=document.getElementById('sbtn');
+
+/* ══ MESSAGES ══ */
+function addMsg(role,text,typing=false){
+  const row=document.createElement('div');
+  row.className='mrow '+(role==='u'?'u':'');
+  if(typing) row.id='typ';
+  const ava=document.createElement('div');
+  ava.className='mava '+(role==='u'?'u':'ai');
+  ava.textContent=role==='u'?'Вы':'✦';
+  const bub=document.createElement('div');
+  bub.className='bub '+(role==='u'?'u':'ai');
+  if(typing){bub.classList.add('typ');bub.innerHTML='<div class="dots"><span></span><span></span><span></span></div>';}
+  else bub.innerHTML=text.replace(/\n/g,'<br>');
+  row.appendChild(ava);row.appendChild(bub);
+  msgsEl.appendChild(row);
+  msgsEl.scrollTop=msgsEl.scrollHeight;
+  return row;
+}
+function rmTyp(){const e=document.getElementById('typ');if(e)e.remove();}
+function setStatus(on){
+  document.getElementById('sdot').style.animationPlayState=on?'running':'paused';
+  document.getElementById('stext').textContent=on?'Набирает…':'Онлайн';
+}
+
+function addTimeDivider(label){
+  const d=document.createElement('div');
+  d.className='time-div';
+  d.innerHTML='<span>'+label+'</span>';
+  msgsEl.appendChild(d);
+  msgsEl.scrollTop=msgsEl.scrollHeight;
+}
+
+function addConcernCard(title,sub,hint){
+  const c=document.createElement('div');
+  c.className='concern';
+  c.innerHTML='<div class="concern-tag">💭 В голове клиента</div>'
+    +'<div class="concern-text">«'+title+'»</div>'
+    +'<div class="concern-sub">'+sub+'</div>';
+  msgsEl.appendChild(c);
+  msgsEl.scrollTop=msgsEl.scrollHeight;
+}
+
+function addSysNotice(type,text){
+  const n=document.createElement('div');
+  n.className='sys-notice '+type;
+  n.innerHTML=text;
+  msgsEl.appendChild(n);
+  msgsEl.scrollTop=msgsEl.scrollHeight;
+}
+
+/* ══ CHIPS ══ */
+function renderChips(step){
+  chipsEl.innerHTML='';
+  if(!step||step.silent) return;
+  const grid=document.createElement('div');
+  grid.className='chips';
+  chipsEl.appendChild(grid);
+  step.chips.forEach(c=>{
+    const ch=document.createElement('div');
+    ch.className='chip';
+    ch.innerHTML='<div class="chip-l">'+c.l+'</div>'+(c.s?'<div class="chip-s">'+c.s+'</div>':'');
+    ch.onclick=()=>{
+      grid.querySelectorAll('.chip').forEach(x=>x.classList.remove('picked'));
+      ch.classList.add('picked');
+      setTimeout(()=>send(c.l,c),180);
+    };
+    grid.appendChild(ch);
+  });
+}
+
+/* ══ ПЛАН ══ */
+function markDone(id,label,badge){
+  const ico=document.getElementById('ico-'+id);
+  const val=document.getElementById('pv-'+id);
+  if(!ico||!val) return;
+  ico.className='pi-ico done';
+  val.className='pi-val done';
+  val.textContent=label;
+  const ex=val.parentElement.querySelector('.pi-tag');
+  if(ex)ex.remove();
+  if(badge){const t=document.createElement('span');t.className='pi-tag '+badge;t.textContent=badge==='a'?'⚠ уточнить':'✓';val.parentElement.appendChild(t);}
+  CS.done++;
+  checkDone();
+}
+function markPlan(id,label,badge){
+  const ico=document.getElementById('ico-'+id);
+  const val=document.getElementById('pv-'+id);
+  if(!ico||!val) return;
+  ico.className='pi-ico done';
+  val.className='pi-val done';
+  val.textContent=label;
+}
+function unlockItem(id,label){
+  const ico=document.getElementById('ico-'+id);
+  const val=document.getElementById('pv-'+id);
+  if(!ico||!val) return;
+  ico.className='pi-ico wait';
+  val.className='pi-val wait';
+  val.textContent=label||'ожидаем…';
+}
+function checkDone(){
+  // Утвердить можно когда основные шаги фаз 0 и 1 пройдены
+  if(CS.done>=5) document.getElementById('okBtn').disabled=false;
+}
+
+/* ══ БЮДЖЕТ ══ */
+function addFact(n){
+  CS.fact+=n;
+  const tot=CS.fact+78000;
+  document.getElementById('bfact').textContent=CS.fact.toLocaleString('ru')+' ₸';
+  document.getElementById('btotal').textContent=tot.toLocaleString('ru')+' ₸';
+  const pct=Math.round(CS.fact/tot*100);
+  document.getElementById('bbar').style.width=pct+'%';
+}
+
+/* ══ ФАЗЫ ══ */
+function setPhase(n){
+  CS.phase=n; CS.step=0;
+  document.getElementById('ph'+n).classList.add('active');
+}
+function endPhase0(){
+  // Показываем locked items с правильным временем
+  addTimeDivider('⏸ Halyk будет молчать до Т−3. Напомним в нужный момент.');
+  // Кнопка симуляции следующей фазы
+  const btn=document.createElement('div');
+  btn.style.cssText='padding:0 0 12px 38px;';
+  btn.innerHTML='<button onclick="startPhase1()" style="background:var(--gl);color:var(--gd);border:1.5px solid var(--g);border-radius:var(--r-xs);padding:8px 14px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">▶ Симуляция: за 3 дня до поездки</button>';
+  msgsEl.appendChild(btn);
+  msgsEl.scrollTop=msgsEl.scrollHeight;
+}
+function endPhase1(){
+  addTimeDivider('⏸ Всё готово к поездке. Увидимся в поезде!');
+  const btn=document.createElement('div');
+  btn.style.cssText='padding:0 0 12px 38px;';
+  btn.innerHTML='<button onclick="startPhase2()" style="background:var(--gl);color:var(--gd);border:1.5px solid var(--g);border-radius:var(--r-xs);padding:8px 14px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">▶ Симуляция: в поезде за 40 мин до Астаны</button>';
+  msgsEl.appendChild(btn);
+  msgsEl.scrollTop=msgsEl.scrollHeight;
+}
+function endPhase2(){
+  addTimeDivider('🏁 Астана! Хорошей поездки 🎉');
+  addMsg('ai','Всё готово — план утверждён! Trекер расходов запущен: все платежи картой Halyk автоматически попадут в бюджет поездки. Приятного отдыха с семьёй 🌟');
+  document.getElementById('okBtn').disabled=false;
+  chipsEl.innerHTML='';
+}
+
+function startPhase1(){
+  setPhase(1);
+  // Разблокируем пункты фазы 1 в плане
+  ['transfer','kino','resto','pharma'].forEach(id=>unlockItem(id));
+  runPhase();
+}
+function startPhase2(){
+  setPhase(2);
+  ['airba','taxi'].forEach(id=>unlockItem(id));
+  runPhase();
+}
+
+/* ══ RUNNER ══ */
+async function runPhase(){
+  const phase=PHASES[CS.phase];
+  if(!phase) return;
+  await runNextStep();
+}
+
+async function runNextStep(){
+  const phase=PHASES[CS.phase];
+  if(!phase||CS.step>=phase.steps.length) return;
+  const step=phase.steps[CS.step];
+  CS.step++;
+
+  if(step.silent){
+    await delay(400);
+    step.sysAction();
+    // silent шаги автоматически переходят к следующему
+    await delay(step.sysAction===showDocCheck||step.sysAction===showBudgetCalc ? 200 : 600);
+    return; // следующий вызывается из sysAction
+  }
+
+  // Обычный шаг с AI
+  await callAI(step);
+}
+
+async function showDocCheck(){
+  const step=PHASES[0].steps[1]; // docs step
+  CS.step=2; // после docs идём к insur
+  step.sysAction();
+  await delay(1000);
+  await callAI(PHASES[0].steps[2]); // insur
+}
+
+async function showBudgetCalc(){
+  const step=PHASES[0].steps[3]; // budget step
+  CS.step=4;
+  step.sysAction();
+}
+
+async function showPharmaStep(){
+  await callAI(PHASES[1].steps[5]); // pharma step
+}
+
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+
+/* ══ AI ══ */
+async function callAI(step){
+  CS.typing=true;
+  setStatus(true);
+  addMsg('ai','',true);
+
+  const sys=`Ты — AI-ассистент Halyk Travel. Говоришь языком тревоги и заботы, не языком продажи сервисов.
+
+Поездка: ${CTX.route}, ${CTX.transport}, ${CTX.dates}, ${CTX.pax} чел, дети ${CTX.kids.join(' и ')} лет.
+Погода: пт ${CTX.weather.fri}, сб ${CTX.weather.sat}, вс ${CTX.weather.sun}.
+Отель: ${CTX.hotelName}.
+Апартаменты: ${CTX.isAppart?'да':'нет'}.
+
+Принцип: каждое сообщение отвечает на конкретную мысль-тревогу клиента. Клиент не чувствует что ему продают — он чувствует что о нём заботятся.
+
+${step.aiPrompt}
+
+Только русский язык. Без markdown. Без списков. 1-2 предложения максимум.`;
+
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:200,system:sys,messages:[{role:'user',content:'start'}]})
+    });
+    const d=await r.json();
+    const txt=(d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    rmTyp(); CS.typing=false; setStatus(false);
+    addMsg('ai',txt);
+    CS.hist.push({role:'assistant',content:txt});
+  }catch{
+    rmTyp(); CS.typing=false; setStatus(false);
+    const fb={
+      0:'Билеты оформлены — отлично! На майские отели разбирают быстро. Уже выбрали или помочь с Booking.com? Через Halyk +7% бонусов.',
+      2:'Страховка на семью — данные уже заполнены автоматически, займёт 3 минуты.',
+      3:'В субботу дождь — лучше спланировать трансфер заранее. Маршрут с вокзала уже готов.',
+      4:'Думан — крытый комплекс, для детей 5 и 9 лет в дождь идеально.',
+      5:'После 6.5 часов в поезде готовить не захочется. Рестораны рядом с отелем с детским меню — забронировать столик?',
+    };
+    addMsg('ai', fb[CS.step-1]||'Продолжаем планировать вашу поездку.');
+  }
+  renderChips(step);
+  sbtnEl.disabled=false;
+}
+
+/* ══ SEND ══ */
+async function send(override, chip){
+  const text=(override||inpEl.value).trim();
+  if(!text||CS.typing) return;
+  inpEl.value=''; sbtnEl.disabled=true; chipsEl.innerHTML='';
+  addMsg('u',text);
+
+  if(chip){
+    if(chip.add) addFact(chip.add);
+    if(chip.plan) markDone(chip.plan, chip.label, chip.badge);
+    if(chip.onPick) chip.onPick();
+    // Получаем текущий шаг для onDone
+    const phase=PHASES[CS.phase];
+    const prevStep=phase?.steps[CS.step-1];
+    if(prevStep?.onDone) prevStep.onDone(chip);
+    else await runNextStep();
+  } else {
+    // Текстовый ответ — просто подтверждаем и идём дальше
+    CS.typing=true; setStatus(true); addMsg('ai','',true);
+    await delay(800);
+    rmTyp(); CS.typing=false; setStatus(false);
+    addMsg('ai','Понял! Записал.');
+    await runNextStep();
+  }
+}
+
+/* ══ INPUT ══ */
+function oinp(){
+  sbtnEl.disabled=!inpEl.value.trim();
+  inpEl.style.height='auto';
+  inpEl.style.height=Math.min(inpEl.scrollHeight,72)+'px';
+}
+function hkey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+
+/* ══ ACTIONS ══ */
+function v2approve(){toast('✅ План утверждён! Трекер расходов запущен.');}
+function v2share(){toast('📤 Ссылка на план скопирована');}
+
+/* ══ INIT ══ */
+async function init(){
+  setPhase(0);
+  await callAI(PHASES[0].steps[0]);
+}
+init();
+
+
+</script>
+</body>
+</html>

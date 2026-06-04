@@ -1,0 +1,39 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Build artifacts (когда появится код)
+node_modules/
+dist/
+build/
+.next/
+.cache/
+coverage/
+*.log
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Python (если будут скрипты)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Django / build artifacts
+db.sqlite3
+backend/staticfiles/
+backend/frontend_dist/
+
+# Claude / agent state
+.claude/
