@@ -131,12 +131,16 @@
 
 ---
 
-## Веха 7 — Реальный LLM (ARCHITECTURE §7, §15)
+## Веха 7 — Реальный LLM (ARCHITECTURE §7, §15) ✅
 
-- [ ] `graph/llm.py`: `ChatAnthropic(model=os.environ.get("ANTHROPIC_MODEL","claude-haiku-4-5"))`,
-      system-промпт = travel-контекст + `step.ai_prompt`; `try/except` + таймаут → `step.fallback`.
-- [ ] Без стриминга, только русский, без markdown, 1–2 предложения.
-- **Проверка:** с ключом — живые тексты; пустой/битый ключ → fallback, весь путь 0→4 проходит без 5xx.
+- [x] `graph/llm.py`: `ChatAnthropic(model=settings.ANTHROPIC_MODEL, api_key=…, max_tokens=200,
+      temperature=0.7, timeout=20, max_retries=1)`; system-промпт = travel-контекст + `step.ai_prompt`
+      (плейсхолдеры рендерятся); `try/except` → `step.fallback`. Контент Anthropic (str/блоки) извлекается.
+- [x] Без стриминга, только русский, без markdown, 1–2 предложения; пустой ключ → сразу fallback.
+- [x] Smoke-тесты форсируют offline (autouse-фикстура с пустым ключом) — детерминированы, без сети.
+- **Проверка:** ✅ с реальным ключом `claude-haiku-4-5` — живой русский текст (≠ fallback, прямой вызов
+      и `generate()` ок); пустой ключ → fallback, весь путь 0→4 зелёный без 5xx (6 тестов).
+      Любая ошибка LLM перехватывается → fallback (API не отдаёт 5xx из-за модели).
 
 ---
 

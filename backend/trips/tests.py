@@ -8,6 +8,12 @@ import pytest
 from django.test import Client
 
 
+@pytest.fixture(autouse=True)
+def _offline(settings):
+    """Force fallback texts in all smoke tests — deterministic, no network calls."""
+    settings.ANTHROPIC_API_KEY = ""
+
+
 def _answer(c, tid, value):
     return c.post(
         f"/api/trip/{tid}/answer",
