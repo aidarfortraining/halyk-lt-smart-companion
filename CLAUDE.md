@@ -8,13 +8,16 @@ A **demo-day prototype** for Halyk Bank: an AI travel companion that turns a one
 
 ### Current state
 
-**Build in progress** (backend-first, per `ARCHITECTURE.md §13`). Done: **vehи 0–7 — the backend is
-complete.** The LangGraph core runs the **full journey phases 0→4** (hotel→docs→insurance→budget →
+**Build complete — vehи 0–10 done.** Runs in one container: `docker compose up` → `localhost:8000`,
+end-to-end. The LangGraph core runs the **full journey phases 0→4** (hotel→docs→insurance→budget →
 pharmacy→transfer→kino→restaurant→rain-gear → train→taxi → live tracker/reminders/souvenirs →
-Итоги+Flywheel) end-to-end, with the **real `claude-haiku-4-5`** LLM and a fallback on every step so it
-also runs fully offline. Budget converges 38 000 → 169 500 (Итоги 175 000 vs 169 500 🎯); 6 smoke tests
-green. Not yet built: the **React frontend** (Vite scaffold only, not wired) and **Docker** (vehи 8–9).
-**`TASKS.md` is the live execution tracker** (per-veha checklist with verification + as-built notes).
+Итоги+Flywheel), with the **real `claude-haiku-4-5`** LLM and a fallback on every step so it also runs
+fully offline. Budget converges 38 000 → 169 500 (Итоги 175 000 vs 169 500 🎯). React SPA served by
+WhiteNoise; state on a SQLite volume survives `docker compose restart`. Tests: backend 6 (pytest),
+frontend 2 (vitest). **`TASKS.md` is the per-veha tracker** (verification + as-built notes).
+**Local dev:** see Commands below (venv + runserver + `npm run dev`).
+*(Not auto-verified: a real-browser pixel/click pass — the Playwright MCP was down at build time;
+the SPA is served at `localhost:8000` for manual check, React runtime is covered by the jsdom tests.)*
 
 Built so far: `backend/` — Django project `config/`, app `trips/` with `models.py`, `seed.py`,
 `serializers.py` (snapshot + Итоги), `views.py` (4 endpoints), `graph/` = the LangGraph core

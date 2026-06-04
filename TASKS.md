@@ -163,14 +163,25 @@
 
 ---
 
-## Веха 9 — Docker, один контейнер (ARCHITECTURE §11, §10)
+## Веха 9 — Docker, один контейнер (ARCHITECTURE §11, §10) ✅
 
-- [ ] `Dockerfile` multi-stage: node build → python runtime (`collectstatic`, `migrate`, seed,
-      `gunicorn config.wsgi`).
-- [ ] `docker-compose.yml`: сервис `web`, `8000:8000`, `env_file: .env`, named volume на `db.sqlite3`.
-- [ ] Django-вью `index.html` на `/`, WhiteNoise отдаёт статику.
-- **Проверка:** `docker compose up` → `localhost:8000` проходит end-to-end; `docker compose restart`
-      в середине демо сохраняет фазу/шаг/историю/бюджет.
+- [x] `Dockerfile` multi-stage: node:24-slim (`npm ci` + `vite build` → `dist`) → python:3.12-slim
+      (requirements, копия `frontend_dist`, `collectstatic`); CMD: `migrate` + `seed_demo` + gunicorn.
+- [x] `docker-compose.yml`: сервис `web`, `8000:8000`, `env_file: .env`, `SQLITE_PATH=/data/db.sqlite3`
+      на named volume `sqlite-data`, `DJANGO_DEBUG=0`. `.dockerignore`.
+- [x] SPA: **WhiteNoise** отдаёт `frontend_dist` в корне (`WHITENOISE_ROOT` + index-file) — `/`→index.html,
+      `/assets/*` → хешированный бандл; storage без manifest (Vite уже хеширует).
+- **Проверка:** ✅ `docker compose build` ок; `up` → `GET /` 200 (#root), `/assets/*.js` 200, `/api/*`
+      работает (LLM из `.env`); поток `start→booking` факт 38 000→86 000. **`docker compose restart`
+      середине → `GET /state` восстановил phase 0 / факт 86 000 / 5 сообщений / 2 done** (volume жив).
+
+## Веха 10 — Smoke-тест (ARCHITECTURE §15) ✅
+
+- [x] `pytest` (6 тестов): полный путь `/start → /answer×N → /advance` по фазам 0→4; проверка
+      `phase/step`, состояний пунктов, бюджетной трассы и сходимости Итогов (**175 000 vs 169 500**);
+      guard ложного `/answer`; пропуск `airba` в hotel-path; offline-форс (autouse-фикстура).
+- [x] Frontend: `vitest` (2 теста) — render фаз 0 и 4 на реальных снапшотах.
+- **Проверка:** ✅ backend 6/6, frontend 2/2 зелёные.
 
 ---
 
