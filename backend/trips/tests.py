@@ -37,6 +37,15 @@ def _finish_phase1(c, tid):
         _answer(c, tid, v)
 
 
+def _finish_phase2(c, tid):
+    _advance(c, tid, 2)
+    _answer(c, tid, "taxi")
+
+
+def _line(snapshot, category):
+    return next(l for l in snapshot["budget"]["lines"] if l["category"] == category)
+
+
 @pytest.mark.django_db
 def test_phase0_flow():
     c = Client()
@@ -135,6 +144,45 @@ def test_phase2_hotel_path_skips_airba():
     assert plan["airba"] == "locked"
     assert s["budget"]["fact"] == 105000
     assert s["budget"]["total"] == 175000
+
+
+@pytest.mark.django_db
+def test_phase3_tracker_converges_to_169500():
+    c = Client()
+    tid = _finish_phase0(c)
+    _finish_phase1(c, tid)
+    _finish_phase2(c, tid)
+
+    # advance to phase 3 → entry + resto + duman_morning run silently → duman_taxi awaits
+    s = _advance(c, tid, 3)
+    assert s["phase"] == 3
+    assert s["await_user"] is True
+    assert [ch["value"] for ch in s["chips"]] == ["taxi", "skip"]
+    # 105000 + 3500(arrival) + 12200(fri) + 14000(sat food) + 4500(misc)
+    assert s["budget"]["fact"] == 139200
+
+    s = _answer(c, tid, "taxi")        # Duman taxi +4000
+    assert s["budget"]["fact"] == 143200
+    assert [ch["value"] for ch in s["chips"]] == ["buy", "skip"]   # souvenirs
+
+    s = _answer(c, tid, "buy")         # souvenirs +10300 → then sunday_plan +12000 (#13 fires)
+    assert s["budget"]["fact"] == 165500
+    # overspend notice (#13) for Питание: 38 200 of 36 000
+    assert any("38 200" in m["text"] and "36 000" in m["text"]
+               for m in s["messages"] if m["kind"] == "sys")
+    assert [ch["value"] for ch in s["chips"]] == ["taxi", "skip"]  # station_taxi
+
+    s = _answer(c, tid, "taxi")        # station taxi +4000 → trip_wrapup → phase closes
+    assert s["await_user"] is False
+    assert s["budget"]["fact"] == 169500
+    assert s["budget"]["estimate"] == 0
+    assert s["budget"]["total"] == 169500
+
+    # category facts match the Итоги table (spec §10)
+    assert _line(s, "Трансфер")["fact_amount"] == 11500
+    assert _line(s, "Питание")["fact_amount"] == 38200
+    assert _line(s, "Сувениры")["fact_amount"] == 10300
+    assert _line(s, "Непредвиденное")["fact_amount"] == 4500
 
 
 @pytest.mark.django_db

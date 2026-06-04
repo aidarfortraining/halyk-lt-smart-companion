@@ -33,6 +33,7 @@ class Step:
     chips: list = field(default_factory=list)
     # silent steps only:
     emits: list = field(default_factory=list)   # [{"as": "sys"/"time"/"concern", ...}]
+    tx: list = field(default_factory=list)      # [(budget_category, amount)] — additive transactions
     plan_value: str = ""        # silent: value template for plan_item (supports {total} etc.)
     plan_tag: str = ""
 
@@ -259,11 +260,90 @@ PHASE_2 = [
 ]
 
 
-# phase → ordered steps. Phases 3–4 appended in later vehи.
+# ── ФАЗА 3: в поездке, Этап 8 (spec §8). Живой трекер: переменные категории накапливаются
+# транзакциями → факт 105 000 → 169 500. Трансфер 3500+4000+4000, Питание 12200+14000+12000,
+# Сувениры 10300, Непредвиденное 4500. #13 (перерасход) вычислимо; #14 (экономия) — нота в wrapup.
+PHASE_3 = [
+    Step(
+        key="tracker_entry", phase=3, silent=True,
+        emits=[
+            {"as": "time", "text": "🏁 Пятница 5 июня · Астана · вы на месте"},
+            {"as": "sys", "level": "ok",
+             "text": "Трекер расходов запущен — платежи картой Halyk сами попадут в бюджет. "
+                     "Экстренная помощь (Appteka 17 мин, детская больница, ассистанс 24/7) — в плане."},
+        ],
+        tx=[("Трансфер", 3500)],   # такси с вокзала (вызвано в фазе 2, списывается сейчас)
+    ),
+    Step(
+        key="resto_reminder", phase=3, silent=True,
+        emits=[{"as": "sys", "level": "ok",
+                "text": "🍽️ Ресторан: столик в 20:00, 12 минут пешком от {hotel}. Приятного вечера!"}],
+        tx=[("Питание", 12200)],   # ужин пятницы
+    ),
+    Step(
+        key="duman_morning", phase=3, silent=True,
+        emits=[{"as": "sys", "level": "ok",
+                "text": "☔ Суббота: Думан в 11:00. На улице {sat} — возьмите детям куртки."}],
+        tx=[("Питание", 14000), ("Непредвиденное", 4500)],   # день в Думане: еда + мелочи
+    ),
+    Step(
+        key="duman_taxi", phase=3,
+        concern="Через 30 минут Думан, на улице дождь и пробки",
+        ai_prompt=("Суббота 10:30, до Думана 30 минут, дождь и пробки. Предложи вызвать такси одним "
+                   "тапом — с детьми в дождь пешком неудобно."),
+        fallback=("До Думана ~30 минут, на улице дождь и пробки. Вызвать такси? С детьми так удобнее."),
+        chips=[
+            Chip(label="🚖 Вызвать такси", sub="пробки · ~4 000 ₸", value="taxi",
+                 budget_category="Трансфер", budget_fact=4000),
+            Chip(label="🚶 Дойдём сами", sub="пропустить", value="skip"),
+        ],
+    ),
+    Step(
+        key="souvenirs", phase=3,
+        concern="Что привезти домой? Последний день",
+        ai_prompt=("Воскресенье, последний день в Астане. Предложи сувениры — сладости Рахат, шоколад "
+                   "Баян Сулу через Halyk Market с доставкой к отелю. Говори тепло, не рекламно."),
+        fallback=("Последний день в Астане — что привезти домой? Сладости Рахат и шоколад Баян Сулу "
+                  "через Halyk Market, доставят прямо к {hotel}."),
+        chips=[
+            Chip(label="🛍️ Сувениры — Рахат, Баян Сулу", sub="Halyk Market · доставка к отелю", value="buy",
+                 budget_category="Сувениры", budget_fact=10300),
+            Chip(label="✕ Без сувениров", sub="пропустить", value="skip"),
+        ],
+    ),
+    Step(
+        key="sunday_plan", phase=3, silent=True,
+        emits=[{"as": "sys", "level": "ok",
+                "text": "🕒 Воскресенье 15:00 — до поезда ~5 часов. Успеваете на ЭКСПО или прогулку."}],
+        tx=[("Питание", 12000)],   # питание воскресенья → Питание превышает план (нота #13)
+    ),
+    Step(
+        key="station_taxi", phase=3,
+        concern="Пора выдвигаться на вокзал",
+        ai_prompt=("Воскресенье 19:00 — пора на вокзал к ночному поезду. Предложи вызвать такси "
+                   "отель → вокзал одним тапом."),
+        fallback=("Воскресенье 19:00 — пора на вокзал. Вызвать такси {hotel} → вокзал Нурлы Жол?"),
+        chips=[
+            Chip(label="🚖 Такси на вокзал", sub="~4 000 ₸", value="taxi",
+                 budget_category="Трансфер", budget_fact=4000),
+            Chip(label="✕ Сами доберёмся", sub="пропустить", value="skip"),
+        ],
+    ),
+    Step(
+        key="trip_wrapup", phase=3, silent=True,
+        emits=[{"as": "sys", "level": "ok",
+                "text": "✓ Трансфер вышел дешевле плана на 2 500 ₸, буфер почти не тронут — "
+                        "поездка идёт с экономией. Факт {fact} ₸."}],
+    ),
+]
+
+
+# phase → ordered steps. Phase 4 appended in Веха 6.
 PHASES: dict[int, list] = {
     0: PHASE_0,
     1: PHASE_1,
     2: PHASE_2,
+    3: PHASE_3,
 }
 
 # Closing sys-notice emitted when a phase's steps are exhausted (await_user=false).
@@ -271,6 +351,7 @@ PHASE_END: dict[int, str] = {
     0: "Основное готово. За 7 дней напомним про аптечку, за 3 дня — трансфер и план на выходные.",
     1: "Всё готово к поездке. Увидимся в поезде — за 40 минут до Астаны напомню про такси.",
     2: "Вы в Астане! Дальше — живой трекер бюджета, напоминания и экстренная помощь под рукой.",
+    3: "Поездка завершена! Готовы Итоги план/факт и бонусы Halyk+.",
 }
 
 

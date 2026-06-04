@@ -5,7 +5,7 @@ The view wraps the whole run in one transaction (atomicity without a persist acc
 """
 from ..models import BudgetLine, Message, PlanItem, Trip
 from . import llm
-from .context import full_ctx
+from .context import fmt_money, full_ctx
 from .steps import PHASE_END, PHASES, _step_active
 
 
@@ -23,9 +23,22 @@ def _mark_plan(trip, key, value, tag="", state=PlanItem.DONE):
     PlanItem.objects.filter(trip=trip, key=key).update(state=state, value=value, tag=tag)
 
 
-def _pay_budget(trip, category, fact):
-    if category and fact:
-        BudgetLine.objects.filter(trip=trip, category=category).update(fact_amount=fact)
+def _apply_budget_tx(trip, category, amount):
+    """Additive budget transaction (fact += amount). Unifies prepaid (touched once) and the
+    phase-3 tracker (categories accumulate). Emits the overspend notice (#13) when a transaction
+    pushes a category past its plan."""
+    if not (category and amount):
+        return
+    line = BudgetLine.objects.get(trip=trip, category=category)
+    before = line.fact_amount or 0
+    after = before + amount
+    line.fact_amount = after
+    line.save(update_fields=["fact_amount"])
+    if before <= line.plan_amount < after:
+        _emit(trip, "sys",
+              f"Категория «{category}» превысила план: {fmt_money(after)} ₸ из "
+              f"{fmt_money(line.plan_amount)} ₸ — покрываем из буфера «Непредвиденное».",
+              {"level": "warn"})
 
 
 def _run_silent(trip, step):
@@ -41,6 +54,8 @@ def _run_silent(trip, step):
             _emit(trip, "concern", "", {"title": e.get("title", "").format(**fmt),
                                         "sub": e.get("sub", "").format(**fmt),
                                         "hint": e.get("hint", "").format(**fmt)})
+    for cat, amt in step.tx:
+        _apply_budget_tx(trip, cat, amt)
     if step.plan_item:
         _mark_plan(trip, step.plan_item, step.plan_value.format(**fmt), step.plan_tag)
 
@@ -61,7 +76,7 @@ def n_apply_answer(state):
     _emit(trip, "user", chip.label)
     if step.plan_item:
         _mark_plan(trip, step.plan_item, chip.plan_value or step.plan_item, chip.plan_tag)
-    _pay_budget(trip, chip.budget_category, chip.budget_fact)
+    _apply_budget_tx(trip, chip.budget_category, chip.budget_fact)
     if chip.is_apartments and not trip.is_apartments:
         trip.is_apartments = True
         trip.save(update_fields=["is_apartments"])
