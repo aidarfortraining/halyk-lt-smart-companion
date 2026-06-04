@@ -4,7 +4,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from .graph.journey import run
-from .models import Trip
+from .graph.steps import active_chips_and_await
+from .models import PlanItem, Trip
 from .seed import ensure_seed
 from .serializers import build_snapshot
 
@@ -28,9 +29,40 @@ def trip_state(request, pk):
 
 @api_view(["POST"])
 def trip_answer(request, pk):
-    """Commit the current step's chip, run silent steps, generate the next awaiting step."""
+    """Commit the current step's chip, run silent steps, generate the next awaiting step.
+
+    No-op (returns current snapshot) if the trip isn't awaiting input or the chip is unknown —
+    guards against stray/duplicate answers drifting the step index.
+    """
     trip = get_object_or_404(Trip, pk=pk)
     chip_value = request.data.get("chip_value")
-    with transaction.atomic():
-        run(trip, action="answer", chip_value=chip_value)
+    chips, awaiting = active_chips_and_await(trip)
+    valid = awaiting and any(c["value"] == chip_value for c in chips)
+    if valid:
+        with transaction.atomic():
+            run(trip, action="answer", chip_value=chip_value)
+    return Response(build_snapshot(trip))
+
+
+@api_view(["POST"])
+def trip_advance(request, pk):
+    """Simulation button: jump to the next phase, unlock its plan items, run its first step.
+
+    No-op unless the current phase is closed (await_user False) and to_phase == phase + 1.
+    """
+    trip = get_object_or_404(Trip, pk=pk)
+    try:
+        to_phase = int(request.data.get("to_phase"))
+    except (TypeError, ValueError):
+        return Response(build_snapshot(trip))
+
+    _, awaiting = active_chips_and_await(trip)
+    if not awaiting and to_phase == trip.phase + 1 and 1 <= to_phase <= 4:
+        with transaction.atomic():
+            PlanItem.objects.filter(trip=trip, phase=to_phase, state=PlanItem.LOCKED).update(
+                state=PlanItem.WAIT)
+            trip.phase = to_phase
+            trip.step_index = 0
+            trip.save(update_fields=["phase", "step_index"])
+            run(trip, action="advance")
     return Response(build_snapshot(trip))

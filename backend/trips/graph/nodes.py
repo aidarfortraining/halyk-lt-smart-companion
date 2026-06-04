@@ -38,10 +38,19 @@ def _budget_now(trip):
     return fact, estimate, fact + estimate
 
 
+def _ctx(trip):
+    """Render context for templated step text (weather, hotel, budget)."""
+    fact, estimate, total = _budget_now(trip)
+    return {
+        "fact": _fmt(fact), "estimate": _fmt(estimate), "total": _fmt(total),
+        "fri": trip.weather.get("fri", ""), "sat": trip.weather.get("sat", ""),
+        "sun": trip.weather.get("sun", ""), "hotel": trip.hotel_name,
+    }
+
+
 def _run_silent(trip, step):
     """Emit a silent step's notices/cards and apply its plan mutation."""
-    fact, estimate, total = _budget_now(trip)
-    fmt = {"fact": _fmt(fact), "estimate": _fmt(estimate), "total": _fmt(total)}
+    fmt = _ctx(trip)
     for e in step.emits:
         kind = e["as"]
         if kind == "sys":
@@ -49,8 +58,9 @@ def _run_silent(trip, step):
         elif kind == "time":
             _emit(trip, "time", e["text"].format(**fmt))
         elif kind == "concern":
-            _emit(trip, "concern", "", {"title": e.get("title", ""),
-                                        "sub": e.get("sub", ""), "hint": e.get("hint", "")})
+            _emit(trip, "concern", "", {"title": e.get("title", "").format(**fmt),
+                                        "sub": e.get("sub", "").format(**fmt),
+                                        "hint": e.get("hint", "").format(**fmt)})
     if step.plan_item:
         _mark_plan(trip, step.plan_item, step.plan_value.format(**fmt), step.plan_tag)
 
@@ -86,7 +96,7 @@ def n_advance(state):
     while idx < len(steps) and steps[idx].silent:
         _run_silent(trip, steps[idx])
         idx += 1
-    trip.step_index = idx
+    trip.step_index = min(idx, len(steps))   # clamp: never drift past the phase end
     trip.save(update_fields=["step_index"])
     return {}
 

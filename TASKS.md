@@ -64,18 +64,26 @@
       budget silent → закрытие фазы. Все 4 пункта `done`; **факт 38 000→86 000→89 000**, итог
       стабилен 175 000; `await_user` корректно true→false. Состояние пережило рестарт сервера
       (`GET /state` восстановил экран без повторного прогона графа).
+- **Фикс на ревью:** ложный/повторный `/answer` после закрытия фазы (await=false) дрейфил
+      `step_index` и дублировал нотис — добавлен guard во вью (валидация awaiting + чипа) + кламп в
+      `advance`. Покрыто `trips/tests.py` (smoke-тесты заведены досрочно, фундамент Вехи 10).
 
 ---
 
-## Веха 3 — Фаза 1 + развилки (ARCHITECTURE §2, §5.3, §9)
+## Веха 3 — Фаза 1 + развилки (ARCHITECTURE §2, §5.3, §9) ✅
 
-- [ ] Шаги фазы 1 в `steps.py`: `pharmacy`(T−7), `prep_entry`(silent concern-карточка, дождь),
-      `transfer`, `kino`, `restaurant`, `market_rain`, `checklist_card`(silent, на стыке фаз).
-- [ ] `weather_branch` (conditional) — дождевой контент для transfer/kino/restaurant/market.
-- [ ] `POST /api/trip/<id>/advance` (`{to_phase}`) — разблокирует пункты фазы, ставит `phase/step`,
-      запускает первый шаг фазы через граф.
-- **Проверка:** прогон фазы 1 на дождевом сценарии; факт → 105 000, расчётное → 70 000;
-      `market_rain` влияет на бюджет, но НЕ создаёт plan-item; чеклист-карточка появляется на стыке.
+- [x] Шаги фазы 1 в `steps.py`: `pharmacy`(T−7) → `prep_entry`(silent: time-divider + concern-карточка
+      дождя) → `transfer` → `kino` → `restaurant` → `market_rain`(не plan-item) → `checklist_card`(silent).
+- [x] `_run_silent` подставляет погоду/отель в тексты (concern дождя из `trip.weather`).
+- [x] `POST /api/trip/<id>/advance` (`{to_phase}`) — разблокирует пункты фазы, ставит `phase/step`,
+      прогоняет первый шаг через граф; guard: только `phase+1` и только при закрытой фазе.
+- [x] Smoke-тест `test_phase1_flow_rain`.
+- **Проверка:** ✅ факт 93 500→101 500→**105 000**, расчётное **70 000**, итог 175 000; `transfer`/
+      `restaurant` — расчётное (факт не растёт); `market_rain` платит «Дождевики», не создавая пункт;
+      concern-карточка дождя эмитится; 8 пунктов done, `airba/taxi` locked.
+- **Решение (упрощение §5.3):** отдельный узел `weather_branch` не делаю — демо всегда дождевой
+      (§9), погодный контент зашит в шаги + `trip.weather` подаётся в тексты. Холод/жара/норма —
+      не-цель (не активируются). Если нужна полная развилка — добавлю по запросу.
 
 ---
 
