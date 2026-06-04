@@ -45,6 +45,8 @@ Source-of-truth docs:
 
 When these sources conflict: **how to build → `docs/ARCHITECTURE.md`, content/dates/text → `init-info/halyk_smart_travel_spec.md`, visual look → `init-info/prototype.html`.**
 
+Derived guide (not source of truth): `docs/CODE_REVIEW_PREP.md` — a detailed code-review defense walkthrough (AI/LLM + LangGraph in depth, budget-invariant trace, as-built deltas, reviewer Q&A). Russian.
+
 ### Commands
 
 **Run the demo (one container):** `docker compose up` → `localhost:8000`, end-to-end (first run builds the image; the CMD does `migrate` + `seed_demo` + gunicorn; SQLite state on the `sqlite-data` volume survives `docker compose restart`). Stop with `docker compose down` (add `-v` to wipe demo state). `.env` (gitignored) supplies `ANTHROPIC_API_KEY`/`ANTHROPIC_MODEL`.
