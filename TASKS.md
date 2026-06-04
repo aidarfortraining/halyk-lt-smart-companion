@@ -34,17 +34,18 @@
 
 ---
 
-## Веха 1 — Доменная модель и снапшот (ARCHITECTURE §4, §6, §12)
+## Веха 1 — Доменная модель и снапшот (ARCHITECTURE §4, §6, §12) ✅
 
-- [ ] `trips/models.py`: `Trip`, `PlanItem` (10 шт.), `Message`, `BudgetLine` — поля строго по §4.
-- [ ] Миграции.
-- [ ] `trips/seed.py` — идемпотентный засев референсного Trip (см. «Данные seed» ниже).
-- [ ] `trips/serializers.py` — единый снапшот: `trip`, `plan[]`, `messages[]`,
-      `budget{fact, estimate, total, lines[]}`, `emergency[]`, `phase`, `chips`, `await_user`,
-      `results?`.
-- [ ] `trips/views.py` + `trips/urls.py`: `GET /api/trip/<id>/state` (пока только чтение снапшота).
-- **Проверка:** `seed` создаёт 1 Trip + 10 PlanItem + BudgetLine; `GET /state` возвращает
-      10 пунктов, бюджет (факт 38 000 / расчётное 137 000 / итог 175 000), 3 контакта emergency.
+- [x] `trips/models.py`: `Trip`, `PlanItem` (10 шт.), `Message`, `BudgetLine` — поля строго по §4.
+- [x] Миграция `0001_initial` применена.
+- [x] `trips/seed.py` + команда `seed_demo` — идемпотентный засев референсного Trip.
+- [x] `trips/serializers.py` — единый снапшот: `trip`, `plan[]`, `messages[]`,
+      `budget{fact, estimate, total, lines[]}` (живой бюджет выводится из BudgetLine), `emergency[]`,
+      `phase`, `chips`, `await_user`, `results?`.
+- [x] `trips/views.py` + `trips/urls.py`: `GET /api/trip/<id>/state`.
+- **Проверка:** ✅ `seed_demo` идемпотентен (Trip #1, без дублей); `GET /state` → HTTP 200,
+      10 пунктов (фаза 0 wait / фазы 1–2 locked), бюджет 38 000 / 137 000 / 175 000, 3 emergency.
+- **Заметка:** консольные команды держим ASCII (Windows cp1252 не печатает кириллицу; на HTTP не влияет).
 
 ---
 

@@ -1,5 +1,8 @@
 from django.urls import path
 
-# Endpoints land in Веха 1–3 (ARCHITECTURE.md §6): trip/start, trip/<id>/state,
-# trip/<id>/answer, trip/<id>/advance.
-urlpatterns: list[path] = []
+from . import views
+
+# Веха 2–3 add: trip/start, trip/<id>/answer, trip/<id>/advance.
+urlpatterns = [
+    path("trip/<int:pk>/state", views.trip_state, name="trip-state"),
+]
