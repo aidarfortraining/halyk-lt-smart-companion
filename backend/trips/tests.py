@@ -42,6 +42,12 @@ def _finish_phase2(c, tid):
     _answer(c, tid, "taxi")
 
 
+def _finish_phase3(c, tid):
+    _advance(c, tid, 3)
+    for v in ("taxi", "buy", "taxi"):       # duman_taxi, souvenirs, station_taxi
+        _answer(c, tid, v)
+
+
 def _line(snapshot, category):
     return next(l for l in snapshot["budget"]["lines"] if l["category"] == category)
 
@@ -183,6 +189,39 @@ def test_phase3_tracker_converges_to_169500():
     assert _line(s, "Питание")["fact_amount"] == 38200
     assert _line(s, "Сувениры")["fact_amount"] == 10300
     assert _line(s, "Непредвиденное")["fact_amount"] == 4500
+
+
+@pytest.mark.django_db
+def test_phase4_results_and_flywheel():
+    c = Client()
+    tid = _finish_phase0(c)
+    _finish_phase1(c, tid)
+    _finish_phase2(c, tid)
+    _finish_phase3(c, tid)
+
+    # advance to phase 4 → results presented, flywheel awaits
+    s = _advance(c, tid, 4)
+    assert s["phase"] == 4
+    assert s["await_user"] is True
+    assert [ch["value"] for ch in s["chips"]] == ["burabay", "alakol", "shymkent"]
+
+    r = s["results"]
+    assert r is not None
+    assert r["totals"] == {"plan": 175000, "fact": 169500, "delta": -5500}   # 🎯
+    rows = r["rows"]
+    assert len(rows) == 5
+    assert rows[0] == {"category": "Предоплата", "plan": 105000, "fact": 105000, "delta": 0}
+    assert (rows[1]["plan"], rows[1]["fact"], rows[1]["delta"]) == (14000, 11500, -2500)   # Трансфер
+    assert (rows[2]["plan"], rows[2]["fact"], rows[2]["delta"]) == (36000, 38200, 2200)    # Питание
+    assert (rows[3]["plan"], rows[3]["fact"], rows[3]["delta"]) == (10000, 10300, 300)     # Сувениры
+    assert (rows[4]["plan"], rows[4]["fact"], rows[4]["delta"]) == (10000, 4500, -5500)    # Непредвид.
+    assert len(r["flywheel"]) == 3
+
+    # pick a next trip → demo closes
+    s = _answer(c, tid, "burabay")
+    assert s["await_user"] is False
+    assert s["phase"] == 4
+    assert s["results"] is not None        # results persist after the pick
 
 
 @pytest.mark.django_db

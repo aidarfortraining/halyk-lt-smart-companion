@@ -3,7 +3,7 @@ render snapshot for the frontend, which replaces its state wholesale."""
 from rest_framework import serializers
 
 from .graph.context import budget_now
-from .graph.steps import active_chips_and_await
+from .graph.steps import FLYWHEEL, active_chips_and_await
 from .models import BudgetLine, Message, PlanItem, Trip
 
 
@@ -44,8 +44,35 @@ def build_budget(trip):
     }
 
 
-def build_snapshot(trip, *, results=None):
-    """Full render snapshot. chips/await_user are derived from steps (not persisted)."""
+def build_results(trip):
+    """Итоги table (spec §10) from BudgetLine: prepaid lines fold into 'Предоплата',
+    variable lines are their own rows. Returns None unless the trip reached phase 4."""
+    if trip.phase < 4:
+        return None
+    lines = list(trip.budget_lines.all())
+    prepaid = [l for l in lines if l.kind == BudgetLine.PREPAID]
+    rows = [{
+        "category": "Предоплата",
+        "plan": sum(l.plan_amount for l in prepaid),
+        "fact": sum((l.fact_amount or 0) for l in prepaid),
+    }]
+    rows += [{"category": l.category, "plan": l.plan_amount, "fact": l.fact_amount or 0}
+             for l in lines if l.kind == BudgetLine.VARIABLE]
+    for r in rows:
+        r["delta"] = r["fact"] - r["plan"]
+    total_plan = sum(l.plan_amount for l in lines)
+    total_fact = sum((l.fact_amount or 0) for l in lines)
+    return {
+        "rows": rows,
+        "totals": {"plan": total_plan, "fact": total_fact, "delta": total_fact - total_plan},
+        "bonuses": {"earned": 8500, "tier": "повышена",
+                    "note": "Категория клиента повышена — выше кешбэк в следующем месяце."},
+        "flywheel": FLYWHEEL,
+    }
+
+
+def build_snapshot(trip):
+    """Full render snapshot. chips/await_user/results are derived from state (not persisted)."""
     chips, await_user = active_chips_and_await(trip)
     return {
         "trip": TripSerializer(trip).data,
@@ -56,5 +83,5 @@ def build_snapshot(trip, *, results=None):
         "phase": trip.phase,
         "chips": chips,
         "await_user": await_user,
-        "results": results,
+        "results": build_results(trip),
     }
