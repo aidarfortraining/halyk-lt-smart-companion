@@ -13,7 +13,7 @@ end-to-end. The LangGraph core runs the **full journey phases 0→4** (hotel→d
 pharmacy→transfer→kino→restaurant→rain-gear → train→taxi → live tracker/reminders/souvenirs →
 Итоги+Flywheel), with the **real `claude-haiku-4-5`** LLM and a fallback on every step so it also runs
 fully offline. Budget converges 38 000 → 169 500 (Итоги 175 000 vs 169 500 🎯). React SPA served by
-WhiteNoise; state on a SQLite volume survives `docker compose restart`. Tests: backend 7 (pytest),
+WhiteNoise; state on a SQLite volume survives `docker compose restart`. Tests: backend 9 (pytest),
 frontend 2 (vitest). **`docs/TASKS.md` is the per-веха tracker** (verification + as-built notes).
 **Local dev:** see Commands below (venv + runserver + `npm run dev`).
 *(Verified end-to-end in a real browser via Playwright (2026-06-05): the full 5-phase click-through
@@ -33,8 +33,8 @@ the V1 ticket-purchase wizard that gates the companion, `styles/companion.css` =
 
 **API:** `POST /api/trip/start` · `POST /api/trip/reset` · `GET /api/trip/<id>/state` · `POST /api/trip/<id>/answer` (`{chip_value}`)
 · `POST /api/trip/<id>/advance` (`{to_phase}`). `start` is idempotent (page refresh resumes where you left off); `reset` wipes the Trip and replays from phase 0 (the ↻ button in the chat header). Every response is one full render snapshot
-(`trip, plan[10], messages[], budget{fact,estimate,total,lines}, emergency[], phase, chips, await_user, results?`);
-`chips`/`await_user`/`results` are derived from `steps.py`, not persisted.
+(`trip, plan[10], messages[], budget{fact,estimate,total,lines}, emergency[], phase, chips, await_user, input_hint, results?`);
+`chips`/`await_user`/`input_hint`/`results` are derived from `steps.py`, not persisted. `input_hint` is non-empty only on a **text-input step** (free-text answer instead of chips — currently the stay-address step).
 
 Source-of-truth docs:
 
@@ -57,7 +57,7 @@ Derived guide (not source of truth): `docs/CODE_REVIEW_PREP.md` — a detailed c
 - **Backend deps:** `.venv\Scripts\python.exe -m pip install -r backend\requirements.txt`
 - **Migrate + seed:** `.venv\Scripts\python.exe backend\manage.py migrate` then `... seed_demo` (idempotent reference Trip)
 - **Run backend:** `.venv\Scripts\python.exe backend\manage.py runserver` → `localhost:8000` (API under `/api/`)
-- **Backend tests:** `.venv\Scripts\python.exe -m pytest backend -q` (7 smoke tests; run one with `... -q -k test_phase0_flow`)
+- **Backend tests:** `.venv\Scripts\python.exe -m pytest backend -q` (9 smoke tests; run one with `... -q -k test_phase0_flow`)
 - **Frontend dev:** `npm install --prefix frontend`, `npm run dev --prefix frontend` (Vite, proxies `/api` → `:8000`)
 - **Frontend build / tests / lint:** `npm run build --prefix frontend` (→ `backend/frontend_dist`) · `npm run test --prefix frontend` (vitest, 2 render tests; uses `src/fixtures.phase0.json` + `fixtures.phase4.json`) · `npm run lint --prefix frontend` (eslint)
 - **Windows notes:** console is cp1252 — keep management-command/script `print` output ASCII (Cyrillic crashes the console; HTTP/JSON is UTF-8 and unaffected). PowerShell `$env:VAR=''` **removes** the var (it won't force-empty a key — use a real empty value path if you need fallback mode).
@@ -72,9 +72,11 @@ Django 5.2 + DRF (backend) + React 18 / Vite / TS (frontend) + SQLite + **LangCh
 
 ### The reference scenario (hardcoded)
 
-One family: Aidar / Alia / Aisha (9) / Timur (5). Almaty → Astana, **night train (~13h)**, **June 5–7** (depart Thu June 4 ~20:00, arrive Fri June 5 ~09:00). The demo opens with a **3-step ticket-purchase wizard** (find → pick → buy, `wizard/Wizard.tsx`, static/no-AI, ported from `prototype.html` V1) — "Купить билет" hands off to the companion. The "Кто едет" row is display-only (the document-expiry alert is reserved for the companion, not spoiled in the wizard). Then the client walks the full trip in chat across **5 phases**: Phase 0 (T−14: hotel → documents → insurance → budget) → Phase 1 (T−7/T−3: pharmacy → transfer → entertainment → restaurant → rain gear) → Phase 2 (on the train: groceries/taxi) → Phase 3 (in Astana: live budget tracker, reminders, emergency block, souvenirs) → Phase 4 (Results план/факт + Flywheel). Demo uses the **hotel path** (not apartments) and the **rainy-Saturday** weather scenario (richest logic). The proactive **document-expiry alert (Alia's ID expires July 28 → eGov)** is the key differentiator.
+One family: Aidar / Alia / Aisha (9) / Timur (5). Almaty → Astana, **night train (~13h)**, **June 5–7** (depart Thu June 4 ~20:00, arrive Fri June 5 ~09:00). The demo opens with a **3-step ticket-purchase wizard** (find → pick → buy, `wizard/Wizard.tsx`, static/no-AI, ported from `prototype.html` V1) — "Купить билет" hands off to the companion. The "Кто едет" row is display-only (the document-expiry alert is reserved for the companion, not spoiled in the wizard). Then the client walks the full trip in chat across **5 phases**: Phase 0 (T−14: **welcome** [silent: tickets-bought + service intro] → hotel → [stay-address if apartments/already-booked] → documents → insurance → budget) → Phase 1 (T−7/T−3: pharmacy → transfer → entertainment → restaurant → rain gear) → Phase 2 (on the train: groceries/taxi) → Phase 3 (in Astana: live budget tracker, reminders, emergency block, souvenirs) → Phase 4 (Results план/факт + Flywheel). Demo uses the **hotel path** (not apartments) and the **rainy-Saturday** weather scenario (richest logic). The proactive **document-expiry alert (Alia's ID expires July 28 → eGov)** is the key differentiator.
 
-Each AI step emits a short message in "anxiety language"; the client replies with chips (human-in-the-loop). The right column is a live **Travel Plan** of 10 items (locked / wait / done), plus an always-visible **emergency block**. Inline simulation buttons advance phases. Full stage→step→notification mapping is in `docs/ARCHITECTURE.md` §2.
+The companion's **first message** is the static `welcome` step (tickets-bought confirmation + ticket facts + a one-line "I'm your personal assistant" intro); the **second** is the hotel question (mentions Booking + Halyk bonuses, names no specific hotel). Picking **🏠 Апартаменты / ✓ Уже забронировал** opens a **free-text stay-address step** (`Trip.address_pending` → the `stay_address` step asks for the address and explains why; the typed address is saved to `hotel_name`/`hotel_address` and shown in the plan). The **🏨 Booking** chip skips it. Every service-offer message follows an **explain-then-offer** shape (what the service is, why it helps, then the offer); LLM tone is **official/formal (на «Вы»)**, see `graph/llm.py`.
+
+Each AI step emits a short message in "anxiety language"; the client replies with chips (human-in-the-loop) — or free text on a text-input step. The right column is a live **Travel Plan** of 10 items (locked / wait / done), plus an always-visible **emergency block**. Inline simulation buttons advance phases. Full stage→step→notification mapping is in `docs/ARCHITECTURE.md` §2.
 
 ### Budget model (recurring invariant)
 
