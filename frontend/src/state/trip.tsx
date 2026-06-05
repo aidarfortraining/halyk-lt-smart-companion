@@ -30,6 +30,7 @@ interface TripContext {
   busy: boolean
   answer: (chipValue: string) => Promise<void>
   advance: (toPhase: number) => Promise<void>
+  reset: () => Promise<void>
 }
 
 const Ctx = createContext<TripContext | null>(null)
@@ -41,6 +42,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (started.current) return // guard React 18 StrictMode double-mount
     started.current = true
+    // Page load = resume where we left off (start is idempotent). The ↻ button resets.
     api.start().then((s) => dispatch({ type: 'snapshot', payload: s }))
   }, [])
 
@@ -64,6 +66,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
       const id = state.snapshot?.trip.id
       return id ? run(() => api.advance(id, toPhase)) : Promise.resolve()
     },
+    reset: () => run(() => api.reset()),
   }
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

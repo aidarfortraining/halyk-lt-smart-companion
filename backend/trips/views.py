@@ -20,6 +20,16 @@ def trip_start(request):
     return Response(build_snapshot(trip))
 
 
+@api_view(["POST"])
+def trip_reset(request):
+    """Wipe all data and replay from scratch: delete trips, re-seed, run the first step."""
+    with transaction.atomic():
+        Trip.objects.all().delete()
+        trip = ensure_seed()
+        run(trip, action="start")
+    return Response(build_snapshot(trip))
+
+
 @api_view(["GET"])
 def trip_state(request, pk):
     """Full snapshot for rendering / restoring the screen after a restart (ARCHITECTURE.md §6)."""

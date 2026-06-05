@@ -7,7 +7,7 @@ import { ResultsScreen } from './ResultsScreen'
 import { SimButtons } from './SimButtons'
 
 export function ChatColumn() {
-  const { snapshot, busy } = useTrip()
+  const { snapshot, busy, reset } = useTrip()
   const msgsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -24,6 +24,16 @@ export function ChatColumn() {
           <div className="c-sub">Персональный ассистент поездки</div>
         </div>
         <div className="c-status"><div className="sdot" /><span>{busy ? 'Набирает…' : 'Онлайн'}</span></div>
+        <button
+          className="reset-btn"
+          disabled={busy}
+          title="Начать заново"
+          onClick={() => {
+            if (window.confirm('Начать переписку заново? Все данные обнулятся.')) reset()
+          }}
+        >
+          ↻
+        </button>
       </div>
 
       <div className="msgs" ref={msgsRef}>

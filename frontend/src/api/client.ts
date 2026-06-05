@@ -19,6 +19,7 @@ function post(path: string, body?: unknown): Promise<Snapshot> {
 
 export const api = {
   start: () => post('/trip/start'),
+  reset: () => post('/trip/reset'),
   state: (id: number) => request(`/trip/${id}/state`),
   answer: (id: number, chip_value: string) => post(`/trip/${id}/answer`, { chip_value }),
   advance: (id: number, to_phase: number) => post(`/trip/${id}/advance`, { to_phase }),

@@ -8,20 +8,20 @@ A **demo-day prototype** for Halyk Bank: an AI travel companion that turns a one
 
 ### Current state
 
-**Build complete — vehи 0–10 done.** Runs in one container: `docker compose up` → `localhost:8000`,
+**Build complete — вехи 0–10 done.** Runs in one container: `docker compose up` → `localhost:8000`,
 end-to-end. The LangGraph core runs the **full journey phases 0→4** (hotel→docs→insurance→budget →
 pharmacy→transfer→kino→restaurant→rain-gear → train→taxi → live tracker/reminders/souvenirs →
 Итоги+Flywheel), with the **real `claude-haiku-4-5`** LLM and a fallback on every step so it also runs
 fully offline. Budget converges 38 000 → 169 500 (Итоги 175 000 vs 169 500 🎯). React SPA served by
-WhiteNoise; state on a SQLite volume survives `docker compose restart`. Tests: backend 6 (pytest),
-frontend 2 (vitest). **`docs/TASKS.md` is the per-veha tracker** (verification + as-built notes).
+WhiteNoise; state on a SQLite volume survives `docker compose restart`. Tests: backend 7 (pytest),
+frontend 2 (vitest). **`docs/TASKS.md` is the per-веха tracker** (verification + as-built notes).
 **Local dev:** see Commands below (venv + runserver + `npm run dev`).
 *(Verified end-to-end in a real browser via Playwright (2026-06-05): the full 5-phase click-through
 with the live `claude-haiku-4-5` LLM runs clean — the budget invariant holds at every step
 (38 000 → 89 000 → 105 000 → 169 500, Итоги 175 000 vs 169 500 🎯), every request 200, no console errors.)*
 
 Layout: `backend/` — Django project `config/`, app `trips/` (`models.py`, `seed.py`,
-`serializers.py` = snapshot + Итоги, `views.py` = 4 endpoints, `graph/` = the LangGraph core
+`serializers.py` = snapshot + Итоги, `views.py` = 5 endpoints, `graph/` = the LangGraph core
 [`state.py`, `steps.py` = all 5 phases declared, `nodes.py`, `journey.py`, `llm.py`, `context.py`],
 `tests.py` = pytest smoke, `management/commands/seed_demo.py`). `frontend/` — Vite + React 18 + TS SPA
 (`api/client.ts`, `state/trip.tsx`, `types.ts`, `util.ts`, `components/` = ChatColumn/MessageList/
@@ -30,8 +30,8 @@ Chips/InputArea/TravelPlan/Budget/EmergencyBlock/SimButtons/ResultsScreen, `styl
 `Dockerfile` (multi-stage) + `docker-compose.yml` (SQLite on a named volume). Dev DB
 `backend/db.sqlite3` (gitignored); the prod SPA build lands in `backend/frontend_dist` (gitignored).
 
-**API:** `POST /api/trip/start` · `GET /api/trip/<id>/state` · `POST /api/trip/<id>/answer` (`{chip_value}`)
-· `POST /api/trip/<id>/advance` (`{to_phase}`). Every response is one full render snapshot
+**API:** `POST /api/trip/start` · `POST /api/trip/reset` · `GET /api/trip/<id>/state` · `POST /api/trip/<id>/answer` (`{chip_value}`)
+· `POST /api/trip/<id>/advance` (`{to_phase}`). `start` is idempotent (page refresh resumes where you left off); `reset` wipes the Trip and replays from phase 0 (the ↻ button in the chat header). Every response is one full render snapshot
 (`trip, plan[10], messages[], budget{fact,estimate,total,lines}, emergency[], phase, chips, await_user, results?`);
 `chips`/`await_user`/`results` are derived from `steps.py`, not persisted.
 
@@ -39,7 +39,7 @@ Source-of-truth docs:
 
 - `init-info/halyk_smart_travel_spec.md` — **source of truth for product logic & content** (the anxiety map, 10-stage journey, ~18 notifications, budget mechanics, weather adaptation). Russian.
 - `docs/ARCHITECTURE.md` — **source of truth for the implementation** (tech stack, Django data model, LangGraph nodes, API contract, full 5-phase scope, build milestones, prototype-vs-spec content corrections; see §16 for as-built deltas). Russian. **Read this first before coding.**
-- `docs/TASKS.md` — **build tracker**: the milestones (vehи 0–10, all ✅) expanded into tasks with verification + decisions taken. Russian. Read it to see exactly what was built and why.
+- `docs/TASKS.md` — **build tracker**: the milestones (вехи 0–10, all ✅) expanded into tasks with verification + decisions taken. Russian. Read it to see exactly what was built and why.
 - `docs/PLAN.md` — original build-architecture sketch & explicit non-goals (skeleton; superseded in detail by `docs/ARCHITECTURE.md`). Russian.
 - `init-info/prototype.html` — **source of truth for visual look only** (single-file vanilla HTML/CSS/JS, ~1500 lines, Halyk brand, chat + Travel Plan). No framework, no build step — open directly in a browser. Will be rebuilt; its *content* (dates, texts, budget, train duration, document trigger) is **superseded** — see `docs/ARCHITECTURE.md` §14.
 
@@ -67,7 +67,7 @@ Django 5.2 + DRF (backend) + React 18 / Vite / TS (frontend) + SQLite + **LangCh
 
 - Run target: `docker compose up` → `localhost:8000`, end-to-end in one step.
 - **The demo must run fully offline**: every AI step has a prepared `fallback` so no network = still a complete run.
-- State persists (the Travel Plan survives a container restart mid-demo).
+- State persists (the Travel Plan survives a container restart and a page refresh mid-demo — refresh resumes via the idempotent `start`). The ↻ button in the chat header is the only way to wipe and restart (`reset`).
 
 ### The reference scenario (hardcoded)
 

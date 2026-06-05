@@ -231,6 +231,25 @@ def test_phase4_results_and_flywheel():
 
 
 @pytest.mark.django_db
+def test_reset_replays_from_scratch():
+    c = Client()
+    tid = _finish_phase0(c)
+    _advance(c, tid, 1)                     # mid-journey: phase 1
+
+    s = c.post("/api/trip/reset").json()    # wipe everything, replay from the first step
+    assert s["phase"] == 0
+    assert s["await_user"] is True
+    assert [ch["value"] for ch in s["chips"]] == ["booking", "appart", "booked"]
+    assert s["budget"]["fact"] == 38000
+    assert s["budget"]["total"] == 175000
+    assert sum(1 for p in s["plan"] if p["state"] == "done") == 0
+    assert len([m for m in s["messages"] if m["kind"] == "user"]) == 0
+
+    from trips.models import Trip
+    assert Trip.objects.count() == 1        # singleton preserved, not duplicated
+
+
+@pytest.mark.django_db
 def test_stray_answer_is_noop():
     c = Client()
     s = c.post("/api/trip/start").json()

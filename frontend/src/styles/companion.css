@@ -21,6 +21,9 @@ html,body{height:100%;}
 .c-sub{font-size:11px;color:var(--t3);}
 .c-status{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--g);}
 .sdot{width:7px;height:7px;border-radius:50%;background:var(--g);animation:pulse 1.6s ease-in-out infinite;}
+.reset-btn{margin-left:6px;width:30px;height:30px;border-radius:50%;background:var(--bg);border:1px solid var(--border);color:var(--t3);font-size:15px;line-height:1;cursor:pointer;flex-shrink:0;transition:.12s;}
+.reset-btn:hover{background:var(--gl);color:var(--gd);border-color:var(--g);}
+.reset-btn:disabled{opacity:.5;cursor:not-allowed;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 
 .time-div{display:flex;align-items:center;gap:10px;padding:6px 0;flex-shrink:0;}
