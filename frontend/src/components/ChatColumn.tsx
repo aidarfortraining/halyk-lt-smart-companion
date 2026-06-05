@@ -6,7 +6,7 @@ import { MessageList } from './MessageList'
 import { ResultsScreen } from './ResultsScreen'
 import { SimButtons } from './SimButtons'
 
-export function ChatColumn() {
+export function ChatColumn({ onExitToWizard }: { onExitToWizard: () => void }) {
   const { snapshot, busy, reset } = useTrip()
   const msgsRef = useRef<HTMLDivElement>(null)
 
@@ -29,7 +29,9 @@ export function ChatColumn() {
           disabled={busy}
           title="Начать заново"
           onClick={() => {
-            if (window.confirm('Начать переписку заново? Все данные обнулятся.')) reset()
+            if (window.confirm('Начать заново? Все данные обнулятся и вы вернётесь к покупке билетов.')) {
+              reset().then(onExitToWizard)
+            }
           }}
         >
           ↻

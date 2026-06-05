@@ -12,14 +12,18 @@ const P0 = phase0 as unknown as Snapshot
 const P4 = phase4 as unknown as Snapshot
 
 vi.mock('./api/client', () => ({
-  api: { start: vi.fn(), state: vi.fn(), answer: vi.fn(), advance: vi.fn() },
+  api: { start: vi.fn(), reset: vi.fn(), state: vi.fn(), answer: vi.fn(), advance: vi.fn() },
 }))
 
 import { api } from './api/client'
 import App from './App'
 
-beforeEach(() => vi.mocked(api.start).mockResolvedValue(P0))
-afterEach(() => cleanup())
+// Skip the ticket-purchase wizard so <App/> mounts straight into the companion.
+beforeEach(() => {
+  localStorage.setItem('halyk_purchased', '1')
+  vi.mocked(api.start).mockResolvedValue(P0)
+})
+afterEach(() => { cleanup(); localStorage.clear() })
 
 test('mounts and renders the phase-0 chat + Travel Plan', async () => {
   const { container } = render(<App />)

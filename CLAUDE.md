@@ -25,8 +25,9 @@ Layout: `backend/` — Django project `config/`, app `trips/` (`models.py`, `see
 [`state.py`, `steps.py` = all 5 phases declared, `nodes.py`, `journey.py`, `llm.py`, `context.py`],
 `tests.py` = pytest smoke, `management/commands/seed_demo.py`). `frontend/` — Vite + React 18 + TS SPA
 (`api/client.ts`, `state/trip.tsx`, `types.ts`, `util.ts`, `components/` = ChatColumn/MessageList/
-Chips/InputArea/TravelPlan/Budget/EmergencyBlock/SimButtons/ResultsScreen, `styles/companion.css`
-= V2-CSS port of the prototype, `App.test.tsx` = vitest render test on captured snapshots).
+Chips/InputArea/TravelPlan/Budget/EmergencyBlock/SimButtons/ResultsScreen + `wizard/Wizard` =
+the V1 ticket-purchase wizard that gates the companion, `styles/companion.css` = V2-CSS port +
+`styles/wizard.css` = V1-CSS port (scoped under `.wizard-root`), `App.test.tsx` = vitest render test).
 `Dockerfile` (multi-stage) + `docker-compose.yml` (SQLite on a named volume). Dev DB
 `backend/db.sqlite3` (gitignored); the prod SPA build lands in `backend/frontend_dist` (gitignored).
 
@@ -67,11 +68,11 @@ Django 5.2 + DRF (backend) + React 18 / Vite / TS (frontend) + SQLite + **LangCh
 
 - Run target: `docker compose up` → `localhost:8000`, end-to-end in one step.
 - **The demo must run fully offline**: every AI step has a prepared `fallback` so no network = still a complete run.
-- State persists (the Travel Plan survives a container restart and a page refresh mid-demo — refresh resumes via the idempotent `start`). The ↻ button in the chat header is the only way to wipe and restart (`reset`).
+- State persists (the Travel Plan survives a container restart and a page refresh mid-demo — refresh resumes via the idempotent `start`; a `halyk_purchased` localStorage flag keeps you in the companion past the wizard). The ↻ button in the chat header wipes the trip (`reset`) **and** returns to the ticket-purchase wizard — the full from-scratch restart.
 
 ### The reference scenario (hardcoded)
 
-One family: Aidar / Alia / Aisha (9) / Timur (5). Almaty → Astana, **night train (~13h)**, **June 5–7** (depart Thu June 4 ~20:00, arrive Fri June 5 ~09:00). The client walks the full trip in chat across **5 phases**: Phase 0 (T−14: hotel → documents → insurance → budget) → Phase 1 (T−7/T−3: pharmacy → transfer → entertainment → restaurant → rain gear) → Phase 2 (on the train: groceries/taxi) → Phase 3 (in Astana: live budget tracker, reminders, emergency block, souvenirs) → Phase 4 (Results план/факт + Flywheel). Demo uses the **hotel path** (not apartments) and the **rainy-Saturday** weather scenario (richest logic). The proactive **document-expiry alert (Alia's ID expires July 28 → eGov)** is the key differentiator.
+One family: Aidar / Alia / Aisha (9) / Timur (5). Almaty → Astana, **night train (~13h)**, **June 5–7** (depart Thu June 4 ~20:00, arrive Fri June 5 ~09:00). The demo opens with a **3-step ticket-purchase wizard** (find → pick → buy, `wizard/Wizard.tsx`, static/no-AI, ported from `prototype.html` V1) — "Купить билет" hands off to the companion. The "Кто едет" row is display-only (the document-expiry alert is reserved for the companion, not spoiled in the wizard). Then the client walks the full trip in chat across **5 phases**: Phase 0 (T−14: hotel → documents → insurance → budget) → Phase 1 (T−7/T−3: pharmacy → transfer → entertainment → restaurant → rain gear) → Phase 2 (on the train: groceries/taxi) → Phase 3 (in Astana: live budget tracker, reminders, emergency block, souvenirs) → Phase 4 (Results план/факт + Flywheel). Demo uses the **hotel path** (not apartments) and the **rainy-Saturday** weather scenario (richest logic). The proactive **document-expiry alert (Alia's ID expires July 28 → eGov)** is the key differentiator.
 
 Each AI step emits a short message in "anxiety language"; the client replies with chips (human-in-the-loop). The right column is a live **Travel Plan** of 10 items (locked / wait / done), plus an always-visible **emergency block**. Inline simulation buttons advance phases. Full stage→step→notification mapping is in `docs/ARCHITECTURE.md` §2.
 
