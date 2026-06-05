@@ -91,6 +91,45 @@ def test_phase0_flow():
 
 
 @pytest.mark.django_db
+def test_phase0_welcome_then_hotel():
+    c = Client()
+    s = c.post("/api/trip/start").json()
+    # Two AI messages on start: welcome (tickets + intro) then the housing question.
+    ai = [m for m in s["messages"] if m["kind"] == "ai"]
+    assert len(ai) == 2
+    assert "билеты" in ai[0]["text"].lower()        # welcome states tickets are bought
+    assert "Booking" in ai[1]["text"]               # housing question mentions Booking bonuses
+    # booking path skips the address step → goes straight to insurance
+    assert [ch["value"] for ch in s["chips"]] == ["booking", "appart", "booked"]
+
+
+@pytest.mark.django_db
+def test_phase0_address_flow():
+    c = Client()
+    tid = c.post("/api/trip/start").json()["trip"]["id"]
+
+    # choosing apartments → text step asks for the address (no chips, input hint set)
+    s = _answer(c, tid, "appart")
+    assert s["await_user"] is True
+    assert s["chips"] == []
+    assert s["input_hint"]
+    assert s["trip"]["is_apartments"] is True
+
+    # the address step itself doesn't touch the budget
+    fact_before = s["budget"]["fact"]
+
+    # typing the address is accepted, stored, then docs (silent) → insurance awaits
+    s = _answer(c, tid, "ул. Достык 5, кв. 10")
+    assert s["trip"]["hotel_name"] == "ул. Достык 5, кв. 10"
+    hotel = next(p for p in s["plan"] if p["key"] == "hotel")
+    assert "ул. Достык 5" in hotel["value"] and hotel["state"] == "done"
+    assert [ch["value"] for ch in s["chips"]] == ["base", "family", "premium"]
+    assert any("eGov" in m["text"] for m in s["messages"] if m["kind"] == "sys")
+    assert s["budget"]["fact"] == fact_before                                   # address is free
+    assert s["budget"]["fact"] + s["budget"]["estimate"] == s["budget"]["total"]  # budget stays consistent
+
+
+@pytest.mark.django_db
 def test_phase1_flow_rain():
     c = Client()
     tid = _finish_phase0(c)

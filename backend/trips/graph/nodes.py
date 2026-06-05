@@ -46,7 +46,9 @@ def _run_silent(trip, step):
     fmt = full_ctx(trip)
     for e in step.emits:
         kind = e["as"]
-        if kind == "sys":
+        if kind == "ai":
+            _emit(trip, "ai", e["text"].format(**fmt))
+        elif kind == "sys":
             _emit(trip, "sys", e["text"].format(**fmt), {"level": e.get("level", "ok")})
         elif kind == "time":
             _emit(trip, "time", e["text"].format(**fmt))
@@ -60,6 +62,23 @@ def _run_silent(trip, step):
         _mark_plan(trip, step.plan_item, step.plan_value.format(**fmt), step.plan_tag)
 
 
+def _apply_text(trip, step, text):
+    """action=answer on a text_input step: record the typed value (stay address)."""
+    text = (text or "").strip()
+    if not text:
+        return
+    _emit(trip, "user", text)
+    if step.key == "stay_address":
+        trip.hotel_name = text
+        trip.hotel_address = text
+        trip.address_pending = False
+        trip.save(update_fields=["hotel_name", "hotel_address", "address_pending"])
+        item = PlanItem.objects.filter(trip=trip, key="hotel").first()
+        if item:
+            item.value = f"{item.value} · {text}"
+            item.save(update_fields=["value"])
+
+
 # ── nodes ──
 def n_apply_answer(state):
     """action=answer: emit the user's chip and apply its plan/budget effects to the answered step."""
@@ -70,6 +89,9 @@ def n_apply_answer(state):
     if trip.step_index >= len(steps):
         return {}
     step = steps[trip.step_index]
+    if step.text_input:
+        _apply_text(trip, step, state["chip_value"])
+        return {}
     chip = next((c for c in step.chips if c.value == state["chip_value"]), None)
     if chip is None:
         return {}
@@ -80,6 +102,12 @@ def n_apply_answer(state):
     if chip.is_apartments and not trip.is_apartments:
         trip.is_apartments = True
         trip.save(update_fields=["is_apartments"])
+    if chip.needs_address and not trip.address_pending:
+        # We don't know the place yet — clear the seed hotel name so the LLM/templates
+        # don't leak it while asking for the address; _apply_text sets it to the typed value.
+        trip.address_pending = True
+        trip.hotel_name = ""
+        trip.save(update_fields=["address_pending", "hotel_name"])
     return {}
 
 

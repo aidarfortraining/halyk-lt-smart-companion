@@ -95,5 +95,6 @@ export interface Snapshot {
   phase: number
   chips: Chip[]
   await_user: boolean
+  input_hint: string
   results: Results | null
 }

@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from .graph.journey import run
-from .graph.steps import active_chips_and_await
+from .graph.steps import active_step
 from .models import PlanItem, Trip
 from .seed import ensure_seed
 from .serializers import build_snapshot
@@ -46,8 +46,13 @@ def trip_answer(request, pk):
     """
     trip = get_object_or_404(Trip, pk=pk)
     chip_value = request.data.get("chip_value")
-    chips, awaiting = active_chips_and_await(trip)
-    valid = awaiting and any(c["value"] == chip_value for c in chips)
+    step = active_step(trip)
+    if step is None:
+        valid = False
+    elif step.text_input:
+        valid = bool(chip_value and str(chip_value).strip())   # free-text step (typed address)
+    else:
+        valid = any(c.value == chip_value for c in step.chips)
     if valid:
         with transaction.atomic():
             run(trip, action="answer", chip_value=chip_value)
@@ -66,7 +71,7 @@ def trip_advance(request, pk):
     except (TypeError, ValueError):
         return Response(build_snapshot(trip))
 
-    _, awaiting = active_chips_and_await(trip)
+    awaiting = active_step(trip) is not None
     if not awaiting and to_phase == trip.phase + 1 and 1 <= to_phase <= 4:
         with transaction.atomic():
             items = PlanItem.objects.filter(trip=trip, phase=to_phase, state=PlanItem.LOCKED)

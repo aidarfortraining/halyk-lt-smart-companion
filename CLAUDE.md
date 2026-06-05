@@ -57,9 +57,9 @@ Derived guide (not source of truth): `docs/CODE_REVIEW_PREP.md` — a detailed c
 - **Backend deps:** `.venv\Scripts\python.exe -m pip install -r backend\requirements.txt`
 - **Migrate + seed:** `.venv\Scripts\python.exe backend\manage.py migrate` then `... seed_demo` (idempotent reference Trip)
 - **Run backend:** `.venv\Scripts\python.exe backend\manage.py runserver` → `localhost:8000` (API under `/api/`)
-- **Backend tests:** `.venv\Scripts\python.exe -m pytest backend -q` (6 smoke tests)
+- **Backend tests:** `.venv\Scripts\python.exe -m pytest backend -q` (7 smoke tests; run one with `... -q -k test_phase0_flow`)
 - **Frontend dev:** `npm install --prefix frontend`, `npm run dev --prefix frontend` (Vite, proxies `/api` → `:8000`)
-- **Frontend build / tests:** `npm run build --prefix frontend` (→ `backend/frontend_dist`) · `npm run test --prefix frontend` (vitest, 2 render tests)
+- **Frontend build / tests / lint:** `npm run build --prefix frontend` (→ `backend/frontend_dist`) · `npm run test --prefix frontend` (vitest, 2 render tests; uses `src/fixtures.phase0.json` + `fixtures.phase4.json`) · `npm run lint --prefix frontend` (eslint)
 - **Windows notes:** console is cp1252 — keep management-command/script `print` output ASCII (Cyrillic crashes the console; HTTP/JSON is UTF-8 and unaffected). PowerShell `$env:VAR=''` **removes** the var (it won't force-empty a key — use a real empty value path if you need fallback mode).
 
 ### Stack (as built; see docs/ARCHITECTURE.md §16 for as-built deltas)

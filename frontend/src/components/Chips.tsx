@@ -3,7 +3,8 @@ import { useTrip } from '../state/trip'
 export function Chips() {
   const { snapshot, answer, busy } = useTrip()
   // Flywheel chips are rendered inside ResultsScreen; suppress here on phase 4.
-  if (!snapshot?.await_user || snapshot.results) return null
+  // A text-input step (e.g. typing a stay address) awaits input but has no chips.
+  if (!snapshot?.await_user || snapshot.results || snapshot.chips.length === 0) return null
   return (
     <div className="chips-wrap">
       <div className="chips-ctx">Ваш ответ <span className="ctx-badge">выберите</span></div>

@@ -21,6 +21,7 @@ class Trip(models.Model):
     is_apartments = models.BooleanField(default=False)  # demo = hotel-path (False)
     weather = models.JSONField(default=dict)        # {"fri": "...", "sat": "🌧 +14° дождь", "sun": "..."}
     emergency = models.JSONField(default=list)      # [{"label": "...", "value": "..."}, ...]
+    address_pending = models.BooleanField(default=False)  # True after appart/booked → awaiting typed address
     phase = models.PositiveSmallIntegerField(default=0)   # 0..4
     step_index = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
